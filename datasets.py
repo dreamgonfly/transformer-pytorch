@@ -92,3 +92,14 @@ class IndexedInputTargetTranslationDatasetOnTheFly:
 
     def __len__(self):
         return len(self.input_target_dataset)
+
+    @staticmethod
+    def preprocess(source_dictionary):
+
+        def preprocess_function(source):
+            source_tokens = source.strip().split()
+            indexed_source = source_dictionary.index_sentence(source_tokens)
+            return indexed_source
+
+        return preprocess_function
+
