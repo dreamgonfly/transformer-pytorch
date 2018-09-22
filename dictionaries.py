@@ -38,6 +38,7 @@ class IndexDictionaryOnTheFly:
 
         self.vocab_tokens = self._build_vocabulary(iterable, vocabulary_size)
         self.token_index_dict = {token: index for index, token in enumerate(self.vocab_tokens)}
+        self.vocabulary_size = len(self.vocab_tokens)
 
     def token_to_index(self, token):
         try:
