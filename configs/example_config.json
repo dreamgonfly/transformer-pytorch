@@ -1,0 +1,23 @@
+{
+  "dataset_limit": null,
+  "print_every": 1,
+  "save_every": 1,
+
+  "vocabulary_size": null,
+  "share_dictionary": false,
+  "positional_encoding": true,
+
+  "d_model": 128,
+  "layers_count": 1,
+  "heads_count": 2,
+  "d_ff": 128,
+  "dropout_prob": 0.1,
+
+  "label_smoothing": 0.1,
+  "optimizer": "Noam",
+  "lr": 0.001,
+  "clip_grads": true,
+
+  "batch_size": 10,
+  "epochs": 10
+}
