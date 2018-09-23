@@ -21,7 +21,7 @@ import random
 parser = ArgumentParser(description='Train Transformer')
 parser.add_argument('--config', type=str, default=None)
 
-parser.add_argument('--device', type=str, default='cpu')
+parser.add_argument('--device', type=str, default='cuda' if torch.cuda.is_available() else 'cpu')
 
 parser.add_argument('--dataset_limit', type=int, default=None)
 parser.add_argument('--print_every', type=int, default=1)
@@ -63,8 +63,10 @@ def run_trainer(config):
     run_name = run_name_format.format(**config, timestamp=datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))
 
     logger = get_logger(run_name)
-    logger.info(str(config))
+    logger.info(f'Run name : {run_name}')
+    logger.info(config)
 
+    logger.info('Loading dictionaries...')
     tokenized_dataset = TokenizedTranslationDatasetOnTheFly('train', limit=config['dataset_limit'])
 
     if config['share_dictionary']:
@@ -78,6 +80,7 @@ def run_trainer(config):
         target_generator = target_tokens_generator(tokenized_dataset)
         target_dictionary = IndexDictionaryOnTheFly(target_generator, vocabulary_size=config['vocabulary_size'])
 
+    logger.info('Building model...')
     if config['positional_encoding']:
         source_embedding = PositionalEncoding(
             num_embeddings=source_dictionary.vocabulary_size,
@@ -112,7 +115,11 @@ def run_trainer(config):
         embedding=target_embedding)
 
     model = Transformer(encoder, decoder)
+    parameters_count = sum([p.nelement() for p in model.parameters()])
+    logger.info(model)
+    logger.info(f'Number of parameters : {parameters_count}')
 
+    logger.info('Loading datasets...')
     train_dataset = IndexedInputTargetTranslationDatasetOnTheFly(
         'train',
         source_dictionary,
@@ -136,7 +143,8 @@ def run_trainer(config):
         batch_size=config['batch_size'],
         collate_fn=input_target_collate_fn)
 
-    loss_function = LabelSmoothingLoss(label_smoothing=config['label_smoothing'], vocabulary_size=target_dictionary.vocabulary_size)
+    loss_function = LabelSmoothingLoss(label_smoothing=config['label_smoothing'],
+                                       vocabulary_size=target_dictionary.vocabulary_size)
 
     if config['optimizer'] == 'Noam':
         optimizer = NoamOptimizer(model.parameters(), d_model=config['d_model'])
@@ -145,6 +153,7 @@ def run_trainer(config):
     else:
         raise NotImplementedError()
 
+    logger.info('Start training...')
     trainer = EpochSeq2SeqTrainer(
         model=model,
         train_dataloader=train_dataloader,
