@@ -52,6 +52,9 @@ class IndexDictionaryOnTheFly:
     def index_sentence(self, sentence):
         return [self.token_to_index(token) for token in sentence]
 
+    def tokenify_indexes(self, token_indexes):
+        return [self.index_to_token(token_index) for token_index in token_indexes]
+
     def _build_vocabulary(self, iterable, vocabulary_size):
 
         counter = Counter()
