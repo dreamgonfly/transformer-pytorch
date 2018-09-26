@@ -3,6 +3,7 @@ from dictionaries import IndexDictionaryOnTheFly, shared_tokens_generator, sourc
 from embeddings import PositionalEncoding
 from models import TransformerEncoder, TransformerDecoder, Transformer
 from losses import MaskedCrossEntropyLoss, LabelSmoothingLoss
+from metrics import AccuracyMetric
 from optimizers import NoamOptimizer
 from trainer import EpochSeq2SeqTrainer, input_target_collate_fn
 from utils.log import get_logger
@@ -29,7 +30,7 @@ parser.add_argument('--save_every', type=int, default=1)
 
 parser.add_argument('--vocabulary_size', type=int, default=None)
 parser.add_argument('--share_dictionary', type=bool, default=False)
-parser.add_argument('--positional_encoding', type=bool, default=True)
+parser.add_argument('--positional_encoding', action='store_true')
 
 parser.add_argument('--d_model', type=int, default=128)
 parser.add_argument('--layers_count', type=int, default=1)
@@ -40,7 +41,7 @@ parser.add_argument('--dropout_prob', type=float, default=0.1)
 parser.add_argument('--label_smoothing', type=float, default=0.1)
 parser.add_argument('--optimizer', type=str, default="Noam", choices=["Noam", "Adam"])
 parser.add_argument('--lr', type=float, default=0.001)
-parser.add_argument('--clip_grads', type=bool, default=True)
+parser.add_argument('--clip_grads', action='store_true')
 
 parser.add_argument('--batch_size', type=int, default=10)
 parser.add_argument('--epochs', type=int, default=10)
@@ -66,7 +67,7 @@ def run_trainer(config):
     logger.info(f'Run name : {run_name}')
     logger.info(config)
 
-    logger.info('Loading dictionaries...')
+    logger.info('Constructing dictionaries...')
     tokenized_dataset = TokenizedTranslationDatasetOnTheFly('train', limit=config['dataset_limit'])
 
     if config['share_dictionary']:
@@ -79,6 +80,8 @@ def run_trainer(config):
         source_dictionary = IndexDictionaryOnTheFly(source_generator, vocabulary_size=config['vocabulary_size'])
         target_generator = target_tokens_generator(tokenized_dataset)
         target_dictionary = IndexDictionaryOnTheFly(target_generator, vocabulary_size=config['vocabulary_size'])
+    logger.info(f'Source dictionary vocabulary : {source_dictionary.vocabulary_size} words')
+    logger.info(f'Target dictionary vocabulary : {target_dictionary.vocabulary_size} words')
 
     logger.info('Building model...')
     if config['positional_encoding']:
@@ -115,9 +118,10 @@ def run_trainer(config):
         embedding=target_embedding)
 
     model = Transformer(encoder, decoder)
-    parameters_count = sum([p.nelement() for p in model.parameters()])
     logger.info(model)
-    logger.info(f'Number of parameters : {parameters_count}')
+    logger.info('Encoder : {parameters_count} parameters'.format(parameters_count=sum([p.nelement() for p in encoder.parameters()])))
+    logger.info('Decoder : {parameters_count} parameters'.format(parameters_count=sum([p.nelement() for p in decoder.parameters()])))
+    logger.info('Total : {parameters_count} parameters'.format(parameters_count=sum([p.nelement() for p in model.parameters()])))
 
     logger.info('Loading datasets...')
     train_dataset = IndexedInputTargetTranslationDatasetOnTheFly(
@@ -145,6 +149,7 @@ def run_trainer(config):
 
     loss_function = LabelSmoothingLoss(label_smoothing=config['label_smoothing'],
                                        vocabulary_size=target_dictionary.vocabulary_size)
+    accuracy_function = AccuracyMetric()
 
     if config['optimizer'] == 'Noam':
         optimizer = NoamOptimizer(model.parameters(), d_model=config['d_model'])
@@ -159,6 +164,7 @@ def run_trainer(config):
         train_dataloader=train_dataloader,
         val_dataloader=val_dataloader,
         loss_function=loss_function,
+        metric_function=accuracy_function,
         optimizer=optimizer,
         logger=logger,
         run_name=run_name,

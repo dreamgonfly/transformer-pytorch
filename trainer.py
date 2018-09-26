@@ -16,7 +16,7 @@ class EpochSeq2SeqTrainer:
 
     def __init__(self, model,
                  train_dataloader, val_dataloader,
-                 loss_function, optimizer,
+                 loss_function, metric_function, optimizer,
                  logger, run_name,
                  config):
 
@@ -27,8 +27,8 @@ class EpochSeq2SeqTrainer:
         self.train_dataloader = train_dataloader
         self.val_dataloader = val_dataloader
 
-        self.loss_function = loss_function
-        # self.metric_function = metric_function
+        self.loss_function = loss_function.to(self.device)
+        self.metric_function = metric_function
         self.optimizer = optimizer
         self.clip_grads = self.config['clip_grads']
 
@@ -59,18 +59,18 @@ class EpochSeq2SeqTrainer:
             "Epoch: {epoch:>3} "
             "Progress: {progress:<.1%} "
             "Elapsed: {elapsed} "
-            "Per second: {per_second:<.1} "
+            "examples/second: {per_second:<.1} "
             "Train Loss: {train_loss:<.6} "
             "Val Loss: {val_loss:<.6} "
-            "Train Perplexity: {train_perplexity} "
-            "Val Perplexity: {val_perplexity} "
+            "Train Metrics: {train_metrics} "
+            "Val Metrics: {val_metrics} "
             "Learning rate: {current_lr:<.4} "
         )
 
     def run_epoch(self, dataloader, mode='train'):
         batch_losses = []
         batch_counts = []
-        # batch_metrics = []
+        batch_metrics = []
         for sources, inputs, targets, lengths in tqdm(dataloader):
             sources, inputs, targets = sources.to(self.device), inputs.to(self.device), targets.to(self.device)
             outputs = self.model(sources, inputs)  #, lengths['sources_lengths'], lengths['inputs_lengths']
@@ -87,16 +87,20 @@ class EpochSeq2SeqTrainer:
             batch_losses.append(batch_loss.item())
             batch_counts.append(batch_count)
 
-            # batch_metric, batch_count = self.metric_function(outputs, targets, lengths['targets_lengths'])
-            # batch_metrics.append(batch_metric)
+            batch_metric, batch_metric_count = self.metric_function(outputs, targets)
+            batch_metrics.append(batch_metric)
+
+            assert batch_count == batch_metric_count
 
             if self.epoch == 0:  # for testing
-                return float('inf'), float('inf')
+                return float('inf'), [float('inf')]
 
-        epoch_loss = sum(batch_losses) / len(dataloader.dataset)
-        epoch_metric = float(np.exp(epoch_loss))
+        epoch_loss = sum(batch_losses) / sum(batch_counts)
+        epoch_accuracy = sum(batch_metrics) / sum(batch_counts)
+        epoch_perplexity = float(np.exp(epoch_loss))
+        epoch_metrics = [epoch_accuracy, epoch_perplexity]
 
-        return epoch_loss, epoch_metric
+        return epoch_loss, epoch_metrics
 
     def run(self, epochs=10):
 
@@ -106,12 +110,12 @@ class EpochSeq2SeqTrainer:
             self.model.train()
 
             epoch_start_time = datetime.now()
-            train_epoch_loss, train_epoch_metric = self.run_epoch(self.train_dataloader, mode='train')
+            train_epoch_loss, train_epoch_metrics = self.run_epoch(self.train_dataloader, mode='train')
             epoch_end_time = datetime.now()
 
             self.model.eval()
 
-            val_epoch_loss, val_epoch_metric = self.run_epoch(self.val_dataloader, mode='val')
+            val_epoch_loss, val_epoch_metrics = self.run_epoch(self.val_dataloader, mode='val')
 
             if epoch % self.print_every == 0 and self.logger:
                 per_second = len(self.train_dataloader.dataset) / ((epoch_end_time - epoch_start_time).seconds + 1)
@@ -121,8 +125,8 @@ class EpochSeq2SeqTrainer:
                                                      per_second=per_second,
                                                      train_loss=train_epoch_loss,
                                                      val_loss=val_epoch_loss,
-                                                     train_perplexity=np.exp(train_epoch_loss),
-                                                     val_perplexity=np.exp(val_epoch_loss),
+                                                     train_metrics=[round(metric, 4) for metric in train_epoch_metrics],
+                                                     val_metrics=[round(metric, 4) for metric in val_epoch_metrics],
                                                      current_lr=current_lr,
                                                      elapsed=self._elapsed_time()
                                                      )
@@ -130,14 +134,14 @@ class EpochSeq2SeqTrainer:
                 self.logger.info(log_message)
 
             if epoch % self.save_every == 0:
-                self._save_model(epoch, train_epoch_loss, val_epoch_loss, train_epoch_metric, val_epoch_metric)
+                self._save_model(epoch, train_epoch_loss, val_epoch_loss, train_epoch_metrics, val_epoch_metrics)
 
-    def _save_model(self, epoch, train_epoch_loss, val_epoch_loss, train_epoch_metric, val_epoch_metric):
+    def _save_model(self, epoch, train_epoch_loss, val_epoch_loss, train_epoch_metrics, val_epoch_metrics):
 
         checkpoint_filename = self.save_format.format(
             epoch=epoch,
             val_loss=val_epoch_loss,
-            val_perplexity='{:<.3}'.format(val_epoch_metric)
+            val_perplexity='-'.join(['{:<.3}'.format(v) for v in val_epoch_metrics])
         )
 
         checkpoint_filepath = join(self.checkpoint_dir, checkpoint_filename)
@@ -145,9 +149,9 @@ class EpochSeq2SeqTrainer:
         save_state = {
             'epoch': epoch,
             'train_loss': train_epoch_loss,
-            'train_metric': train_epoch_metric,
+            'train_metrics': train_epoch_metrics,
             'val_loss': val_epoch_loss,
-            'val_metric': val_epoch_metric,
+            'val_metrics': val_epoch_metrics,
             'checkpoint': checkpoint_filepath,
         }
 
@@ -155,11 +159,13 @@ class EpochSeq2SeqTrainer:
             torch.save(self.model.state_dict(), checkpoint_filepath)
             self.history.append(save_state)
 
-        if self.best_val_metric is None or self.best_val_metric < val_epoch_metric:
-            self.best_val_metric = val_epoch_metric
+        representative_val_metric = val_epoch_metrics[0]
+        if self.best_val_metric is None or self.best_val_metric < representative_val_metric:
+            self.best_val_metric = representative_val_metric
             self.val_loss_at_best = val_epoch_loss
             self.train_loss_at_best = train_epoch_loss
-            self.train_metric_at_best = train_epoch_metric
+            self.train_metrics_at_best = train_epoch_metrics
+            self.val_metrics_at_best = val_epoch_metrics
             self.best_checkpoint_filepath = checkpoint_filepath
 
         if self.logger:
