@@ -59,7 +59,7 @@ class EpochSeq2SeqTrainer:
             "Epoch: {epoch:>3} "
             "Progress: {progress:<.1%} "
             "Elapsed: {elapsed} "
-            "examples/second: {per_second:<.1} "
+            "Examples/second: {per_second:<.1} "
             "Train Loss: {train_loss:<.6} "
             "Val Loss: {val_loss:<.6} "
             "Train Metrics: {train_metrics} "
@@ -71,11 +71,11 @@ class EpochSeq2SeqTrainer:
         batch_losses = []
         batch_counts = []
         batch_metrics = []
-        for sources, inputs, targets, lengths in tqdm(dataloader):
+        for sources, inputs, targets in tqdm(dataloader):
             sources, inputs, targets = sources.to(self.device), inputs.to(self.device), targets.to(self.device)
-            outputs = self.model(sources, inputs)  #, lengths['sources_lengths'], lengths['inputs_lengths']
+            outputs = self.model(sources, inputs)
 
-            batch_loss, batch_count = self.loss_function(outputs, targets, lengths['targets_lengths'])
+            batch_loss, batch_count = self.loss_function(outputs, targets)
 
             if mode == 'train':
                 self.optimizer.zero_grad()
@@ -98,7 +98,7 @@ class EpochSeq2SeqTrainer:
         epoch_loss = sum(batch_losses) / sum(batch_counts)
         epoch_accuracy = sum(batch_metrics) / sum(batch_counts)
         epoch_perplexity = float(np.exp(epoch_loss))
-        epoch_metrics = [epoch_accuracy, epoch_perplexity]
+        epoch_metrics = [epoch_perplexity, epoch_accuracy]
 
         return epoch_loss, epoch_metrics
 
@@ -141,7 +141,7 @@ class EpochSeq2SeqTrainer:
         checkpoint_filename = self.save_format.format(
             epoch=epoch,
             val_loss=val_epoch_loss,
-            val_perplexity='-'.join(['{:<.3}'.format(v) for v in val_epoch_metrics])
+            val_metrics='-'.join(['{:<.3}'.format(v) for v in val_epoch_metrics])
         )
 
         checkpoint_filepath = join(self.checkpoint_dir, checkpoint_filename)
@@ -206,10 +206,10 @@ def input_target_collate_fn(batch):
     inputs_tensor = torch.tensor(inputs_padded)
     targets_tensor = torch.tensor(targets_padded)
 
-    lengths = {
-        'sources_lengths': torch.tensor(sources_lengths),
-        'inputs_lengths': torch.tensor(inputs_lengths),
-        'targets_lengths': torch.tensor(targets_lengths)
-    }
+    # lengths = {
+    #     'sources_lengths': torch.tensor(sources_lengths),
+    #     'inputs_lengths': torch.tensor(inputs_lengths),
+    #     'targets_lengths': torch.tensor(targets_lengths)
+    # }
 
-    return sources_tensor, inputs_tensor, targets_tensor, lengths
+    return sources_tensor, inputs_tensor, targets_tensor

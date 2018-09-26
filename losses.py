@@ -59,7 +59,7 @@ class LabelSmoothingLoss(nn.Module):
 
         self.confidence = 1.0 - label_smoothing
 
-    def forward(self, outputs, targets, tmp):
+    def forward(self, outputs, targets):
         """
         outputs (FloatTensor): batch_size x seq_len x n_classes
         targets (LongTensor): batch_size x seq_len
