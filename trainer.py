@@ -160,7 +160,7 @@ class EpochSeq2SeqTrainer:
             self.history.append(save_state)
 
         representative_val_metric = val_epoch_metrics[0]
-        if self.best_val_metric is None or self.best_val_metric < representative_val_metric:
+        if self.best_val_metric is None or self.best_val_metric > representative_val_metric:
             self.best_val_metric = representative_val_metric
             self.val_loss_at_best = val_epoch_loss
             self.train_loss_at_best = train_epoch_loss
