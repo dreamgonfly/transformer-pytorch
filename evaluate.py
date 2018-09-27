@@ -1,9 +1,9 @@
 from evaluator import Evaluator
 from predictors import Predictor
 from models import build_model
-from datasets import TranslationDatasetOnTheFly
-from datasets import TokenizedTranslationDatasetOnTheFly, IndexedInputTargetTranslationDatasetOnTheFly
-from dictionaries import IndexDictionaryOnTheFly, shared_tokens_generator, source_tokens_generator, target_tokens_generator
+from datasets import TranslationDataset
+from datasets import IndexedInputTargetTranslationDatasetOnTheFly
+from dictionaries import IndexDictionary
 
 from argparse import ArgumentParser
 import json
@@ -19,18 +19,8 @@ with open(args.config) as f:
     config = json.load(f)
 
 print('Constructing dictionaries...')
-tokenized_dataset = TokenizedTranslationDatasetOnTheFly('train')
-
-if config['share_dictionary']:
-    source_generator = shared_tokens_generator(tokenized_dataset)
-    source_dictionary = IndexDictionaryOnTheFly(source_generator, vocabulary_size=config['vocabulary_size'])
-    target_generator = shared_tokens_generator(tokenized_dataset)
-    target_dictionary = IndexDictionaryOnTheFly(target_generator, vocabulary_size=config['vocabulary_size'])
-else:
-    source_generator = source_tokens_generator(tokenized_dataset)
-    source_dictionary = IndexDictionaryOnTheFly(source_generator, vocabulary_size=config['vocabulary_size'])
-    target_generator = target_tokens_generator(tokenized_dataset)
-    target_dictionary = IndexDictionaryOnTheFly(target_generator, vocabulary_size=config['vocabulary_size'])
+source_dictionary = IndexDictionary.load(config['data_dir'], mode='source', vocabulary_size=config['vocabulary_size'])
+target_dictionary = IndexDictionary.load(config['data_dir'], mode='target', vocabulary_size=config['vocabulary_size'])
 
 print('Building model...')
 model = build_model(config, source_dictionary.vocabulary_size, target_dictionary.vocabulary_size)
@@ -48,7 +38,7 @@ if args.save_result is None:
         config=args.config.replace('/', '-'),
         timestamp=timestamp.strftime("%Y_%m_%d_%H_%M_%S"))
 else:
-    eval_filepath = save_result
+    eval_filepath = args.save_result
 
 evaluator = Evaluator(
     predictor=predictor,
@@ -56,7 +46,7 @@ evaluator = Evaluator(
 )
 
 print('Evaluating...')
-val_dataset = TranslationDatasetOnTheFly('val')
+val_dataset = TranslationDataset(config['data_dir'], 'val')
 bleu_score = evaluator.evaluate_dataset(val_dataset)
 print('Evaluation time :', datetime.now() - timestamp)
 
