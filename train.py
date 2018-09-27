@@ -4,8 +4,9 @@ from dictionaries import IndexDictionary
 from losses import TokenCrossEntropyLoss, LabelSmoothingLoss
 from metrics import AccuracyMetric
 from optimizers import NoamOptimizer
-from trainer import EpochSeq2SeqTrainer, input_target_collate_fn
+from trainer import EpochSeq2SeqTrainer
 from utils.log import get_logger
+from utils.pipe import input_target_collate_fn
 
 import torch
 from torch.optim import Adam
@@ -45,8 +46,8 @@ parser.add_argument('--optimizer', type=str, default="Adam", choices=["Noam", "A
 parser.add_argument('--lr', type=float, default=0.001)
 parser.add_argument('--clip_grads', action='store_true')
 
-parser.add_argument('--batch_size', type=int, default=10)
-parser.add_argument('--epochs', type=int, default=10)
+parser.add_argument('--batch_size', type=int, default=64)
+parser.add_argument('--epochs', type=int, default=100)
 
 
 def run_trainer(config):

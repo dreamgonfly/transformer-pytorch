@@ -3,7 +3,7 @@ from datasets import TokenizedTranslationDataset, TokenizedTranslationDatasetOnT
 from datasets import InputTargetTranslationDataset, InputTargetTranslationDatasetOnTheFly
 from datasets import IndexedInputTargetTranslationDataset, IndexedInputTargetTranslationDatasetOnTheFly
 from dictionaries import IndexDictionary
-from dictionaries import shared_tokens_generator, source_tokens_generator, target_tokens_generator
+from utils.pipe import shared_tokens_generator, source_tokens_generator, target_tokens_generator
 
 from argparse import ArgumentParser
 

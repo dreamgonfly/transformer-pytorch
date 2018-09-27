@@ -1,4 +1,5 @@
 from embeddings import PositionalEncoding
+from utils.pad import pad_masking, subsequent_masking
 
 import torch
 from torch import nn
@@ -61,30 +62,13 @@ class Transformer(nn.Module):
         batch_size, sources_len = sources.size()
         batch_size, inputs_len = inputs.size()
 
-        self.sources_mask = self.pad_masking(sources, sources_len)
-        self.memory_mask = self.pad_masking(sources, inputs_len)
-        self.inputs_mask = self.subsequent_masking(inputs) | self.pad_masking(inputs, inputs_len)
+        sources_mask = pad_masking(sources, sources_len)
+        memory_mask = pad_masking(sources, inputs_len)
+        inputs_mask = subsequent_masking(inputs) | pad_masking(inputs, inputs_len)
 
-        memory = self.encoder(sources, self.sources_mask)  # (batch_size, seq_len, d_model)
-        outputs, state = self.decoder(inputs, memory, self.memory_mask, self.inputs_mask)  # (batch_size, seq_len, d_model)
+        memory = self.encoder(sources, sources_mask)  # (batch_size, seq_len, d_model)
+        outputs, state = self.decoder(inputs, memory, memory_mask, inputs_mask)  # (batch_size, seq_len, d_model)
         return outputs
-
-    @staticmethod
-    def pad_masking(x, target_len):
-        # x: (batch_size, seq_len)
-        batch_size, seq_len = x.size()
-        padded_positions = x == PAD_TOKEN_ID  # (batch_size, seq_len)
-        pad_mask = padded_positions.unsqueeze(1).expand(batch_size, target_len, seq_len)
-        return pad_mask
-
-    @staticmethod
-    def subsequent_masking(x):
-        # x: (batch_size, seq_len - 1)
-        batch_size, seq_len = x.size()
-        subsequent_mask = np.triu(np.ones(shape=(seq_len, seq_len)), k=1).astype('uint8')
-        subsequent_mask = torch.tensor(subsequent_mask).to(x.device)
-        subsequent_mask = subsequent_mask.unsqueeze(0).expand(batch_size, seq_len, seq_len)
-        return subsequent_mask
 
 
 class TransformerEncoder(nn.Module):
