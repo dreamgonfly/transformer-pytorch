@@ -21,6 +21,11 @@ import random
 parser = ArgumentParser(description='Train Transformer')
 parser.add_argument('--config', type=str, default=None)
 
+parser.add_argument('--data', type=str, default='data/example/processed')
+parser.add_argument('--save_config', type=str, default='checkpoints/example_config.json')
+parser.add_argument('--save_checkpoint', type=str, default='checkpoints/example_model.pth')
+parser.add_argument('--save_log', type=str, default='logs/example.log')
+
 parser.add_argument('--device', type=str, default='cuda' if torch.cuda.is_available() else 'cpu')
 
 parser.add_argument('--dataset_limit', type=int, default=None)

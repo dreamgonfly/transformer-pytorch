@@ -1,7 +1,7 @@
 # Transformer-pytorch
 A PyTorch implementation of Transformer in "Attention is All You Need" (https://arxiv.org/abs/1706.03762)
 
-This repo focuses on clean, readable, and modular implementation of the model.
+This repo focuses on clean, readable, and modular implementation of the paper.
 
 <img width="559" alt="screen shot 2018-09-27 at 1 49 14 pm" src="https://user-images.githubusercontent.com/2340721/46123973-44b08900-c25c-11e8-9468-7aef9e4e3f18.png">
 
@@ -17,7 +17,7 @@ This repo focuses on clean, readable, and modular implementation of the model.
 ### Prepare datasets
 This repo comes with example data in `data/` directory. To begin, you will need to prepare datasets with given data as follows:
 ```
-$ python prepare_datasets.py --train_source=data/raw/src-train.txt --train_target=tgt-train.txt --val_source=src-val.txt --val_target=tgt-val.txt --save_data=data/processed
+$ python prepare_datasets.py --train_source=data/example/raw/src-train.txt --train_target=data/example/raw/tgt-train.txt --val_source=data/example/raw/src-val.txt --val_target=data/example/raw/tgt-val.txt --save_data=data/example/processed
 ```
 
 The example data is brought from [OpenNMT-py](https://github.com/OpenNMT/OpenNMT-py).
@@ -34,9 +34,10 @@ Below are the provided example data files.
 To train model, provide the train script with a path to processed data and save files as follows:
 
 ```
-$ python train.py --data=data/example/processed --save_config=checkpoints/example_config.json --save_checkpoint=checkpoints/example_model.pth 
+$ python train.py --data=data/example/processed --save_config=checkpoints/example_config.json --save_checkpoint=checkpoints/example_model.pth --save_log=logs/example.log 
 ```
 
+This saves model config and checkpoints to given files, respectively.
 You can play around with hyperparameters of the model with command line arguments. 
 For example, add `--layers_count=4` to set the number of layers as 5. 
 

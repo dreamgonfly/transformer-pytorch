@@ -7,14 +7,16 @@ from argparse import ArgumentParser
 import json
 
 parser = ArgumentParser(description='Predict translation')
+parser.add_argument('--source', type=str)
 parser.add_argument('--config', type=str, required=True)
 parser.add_argument('--checkpoint', type=str)
-parser.add_argument('--source', type=str)
+parser.add_argument('--num_candidates', type=int, default=3)
 
 args = parser.parse_args()
 with open(args.config) as f:
     config = json.load(f)
 
+print('Constructing dictionaries...')
 tokenized_dataset = TokenizedTranslationDatasetOnTheFly('train')
 
 if config['share_dictionary']:
@@ -28,6 +30,7 @@ else:
     target_generator = target_tokens_generator(tokenized_dataset)
     target_dictionary = IndexDictionaryOnTheFly(target_generator, vocabulary_size=config['vocabulary_size'])
 
+print('Building model...')
 model = build_model(config, source_dictionary.vocabulary_size, target_dictionary.vocabulary_size)
 
 predictor = Predictor(
@@ -37,5 +40,5 @@ predictor = Predictor(
     checkpoint_filepath=args.checkpoint
 )
 
-for candidate in predictor.predict_one(args.source):
-    print(candidate)
+for index, candidate in enumerate(predictor.predict_one(args.source, num_candidates=args.num_candidates)):
+    print(f'Candidate {index} : {candidate}')
