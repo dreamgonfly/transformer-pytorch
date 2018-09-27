@@ -30,6 +30,7 @@ class PositionalEncoding(nn.Module):
         self.num_embeddings = num_embeddings
         self.embedding_dim = embedding_dim
         self.embbedding = nn.Embedding(num_embeddings, embedding_dim, padding_idx=padding_idx)
+        self.weight = self.embbedding.weight
         self.register_buffer('pe', pe)
         self.dropout = nn.Dropout(p=dropout_prob)
         self.dim = dim
