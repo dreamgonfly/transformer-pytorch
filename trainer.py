@@ -53,7 +53,7 @@ class EpochSeq2SeqTrainer:
         self.best_val_metric = None
         self.best_checkpoint_filepath = None
 
-        self.save_format = 'epoch={epoch:0>3}-val_loss={val_loss:<.3}-val_perplexity={val_perplexity}.pth'
+        self.save_format = 'epoch={epoch:0>3}-val_loss={val_loss:<.3}-val_perplexity={val_metrics}.pth'
 
         self.log_format = (
             "Epoch: {epoch:>3} "

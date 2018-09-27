@@ -1,9 +1,50 @@
+from embeddings import PositionalEncoding
+
 import torch
 from torch import nn
 import numpy as np
 from collections import defaultdict
 
 PAD_TOKEN_ID = 0
+
+
+def build_model(config, source_vocabulary_size, target_vocabulary_size):
+    if config['positional_encoding']:
+        source_embedding = PositionalEncoding(
+            num_embeddings=source_vocabulary_size,
+            embedding_dim=config['d_model'],
+            dim=config['d_model'])  # why dim?
+        target_embedding = PositionalEncoding(
+            num_embeddings=target_vocabulary_size,
+            embedding_dim=config['d_model'],
+            dim=config['d_model'])  # why dim?
+    else:
+        source_embedding = nn.Embedding(
+            num_embeddings=source_vocabulary_size,
+            embedding_dim=config['d_model'])
+        target_embedding = nn.Embedding(
+            num_embeddings=target_vocabulary_size,
+            embedding_dim=config['d_model'])
+
+    encoder = TransformerEncoder(
+        layers_count=config['layers_count'],
+        d_model=config['d_model'],
+        heads_count=config['heads_count'],
+        d_ff=config['d_ff'],
+        dropout_prob=config['dropout_prob'],
+        embedding=source_embedding)
+
+    decoder = TransformerDecoder(
+        layers_count=config['layers_count'],
+        d_model=config['d_model'],
+        heads_count=config['heads_count'],
+        d_ff=config['d_ff'],
+        dropout_prob=config['dropout_prob'],
+        embedding=target_embedding)
+
+    model = Transformer(encoder, decoder)
+
+    return model
 
 
 class Transformer(nn.Module):
@@ -52,10 +93,10 @@ class TransformerEncoder(nn.Module):
         super(TransformerEncoder, self).__init__()
 
         self.d_model = d_model
+        self.embedding = embedding
         self.encoder_layers = nn.ModuleList(
             [TransformerEncoderLayer(d_model, heads_count, d_ff, dropout_prob) for _ in range(layers_count)]
         )
-        self.embedding = embedding
 
     def forward(self, sources, mask):
         """
@@ -96,11 +137,12 @@ class TransformerDecoder(nn.Module):
         super(TransformerDecoder, self).__init__()
 
         self.d_model = d_model
+        self.embedding = embedding
         self.decoder_layers = nn.ModuleList(
             [TransformerDecoderLayer(d_model, heads_count, d_ff, dropout_prob) for _ in range(layers_count)]
         )
-        self.embedding = embedding
         self.generator = nn.Linear(embedding.embedding_dim, embedding.num_embeddings)
+        self.generator.weight = self.embedding.weight
 
     def forward(self, inputs, memory, memory_mask, inputs_mask=None, state=None):
         # inputs: (batch_size, seq_len - 1, d_model)

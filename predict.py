@@ -1,24 +1,41 @@
-from torch import nn
 from predictors import Predictor
-from models import Transformer, TransformerEncoder, TransformerDecoder
+from models import build_model
 from datasets import TokenizedTranslationDatasetOnTheFly, IndexedInputTargetTranslationDatasetOnTheFly
-from dictionaries import IndexDictionaryOnTheFly, shared_tokens_generator
+from dictionaries import IndexDictionaryOnTheFly, shared_tokens_generator, source_tokens_generator, target_tokens_generator
+
+from argparse import ArgumentParser
+import json
+
+parser = ArgumentParser(description='Predict translation')
+parser.add_argument('--config', type=str, required=True)
+parser.add_argument('--checkpoint', type=str)
+parser.add_argument('--source', type=str)
+
+args = parser.parse_args()
+with open(args.config) as f:
+    config = json.load(f)
 
 tokenized_dataset = TokenizedTranslationDatasetOnTheFly('train')
 
-source_generator = shared_tokens_generator(tokenized_dataset)
-source_dictionary = IndexDictionaryOnTheFly(source_generator)
+if config['share_dictionary']:
+    source_generator = shared_tokens_generator(tokenized_dataset)
+    source_dictionary = IndexDictionaryOnTheFly(source_generator, vocabulary_size=config['vocabulary_size'])
+    target_generator = shared_tokens_generator(tokenized_dataset)
+    target_dictionary = IndexDictionaryOnTheFly(target_generator, vocabulary_size=config['vocabulary_size'])
+else:
+    source_generator = source_tokens_generator(tokenized_dataset)
+    source_dictionary = IndexDictionaryOnTheFly(source_generator, vocabulary_size=config['vocabulary_size'])
+    target_generator = target_tokens_generator(tokenized_dataset)
+    target_dictionary = IndexDictionaryOnTheFly(target_generator, vocabulary_size=config['vocabulary_size'])
 
-embedding = nn.Embedding(num_embeddings=source_dictionary.vocabulary_size, embedding_dim=128)
-encoder = TransformerEncoder(layers_count=1, d_model=128, heads_count=2, d_ff=128, dropout_prob=0.1, embedding=embedding)
-decoder = TransformerDecoder(layers_count=1, d_model=128, heads_count=2, d_ff=128, dropout_prob=0.1, embedding=embedding)
-model = Transformer(encoder, decoder)
+model = build_model(config, source_dictionary.vocabulary_size, target_dictionary.vocabulary_size)
 
 predictor = Predictor(
     preprocess=IndexedInputTargetTranslationDatasetOnTheFly.preprocess(source_dictionary),
-    postprocess=lambda x: x,
+    postprocess=lambda x: ' '.join([token for token in target_dictionary.tokenify_indexes(x) if token != '<EndSent>']),
     model=model,
-    checkpoint_filepath='checkpoints/hi/epoch=009-val_loss=1.77e+02-val_perplexity=9.26e+76.pth'
+    checkpoint_filepath=args.checkpoint
 )
 
-print(predictor.predict_one("Orlando Bloom and Miranda Kerr still love each other"))
+for candidate in predictor.predict_one(args.source):
+    print(candidate)

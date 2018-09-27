@@ -1,7 +1,6 @@
+from models import build_model
 from datasets import TokenizedTranslationDatasetOnTheFly, IndexedInputTargetTranslationDatasetOnTheFly
 from dictionaries import IndexDictionaryOnTheFly, shared_tokens_generator, source_tokens_generator, target_tokens_generator
-from embeddings import PositionalEncoding
-from models import TransformerEncoder, TransformerDecoder, Transformer
 from losses import MaskedCrossEntropyLoss, LabelSmoothingLoss
 from metrics import AccuracyMetric
 from optimizers import NoamOptimizer
@@ -80,47 +79,15 @@ def run_trainer(config):
         source_dictionary = IndexDictionaryOnTheFly(source_generator, vocabulary_size=config['vocabulary_size'])
         target_generator = target_tokens_generator(tokenized_dataset)
         target_dictionary = IndexDictionaryOnTheFly(target_generator, vocabulary_size=config['vocabulary_size'])
-    logger.info(f'Source dictionary vocabulary : {source_dictionary.vocabulary_size} words')
-    logger.info(f'Target dictionary vocabulary : {target_dictionary.vocabulary_size} words')
+    logger.info(f'Source dictionary vocabulary : {source_dictionary.vocabulary_size} tokens')
+    logger.info(f'Target dictionary vocabulary : {target_dictionary.vocabulary_size} tokens')
 
     logger.info('Building model...')
-    if config['positional_encoding']:
-        source_embedding = PositionalEncoding(
-            num_embeddings=source_dictionary.vocabulary_size,
-            embedding_dim=config['d_model'],
-            dim=config['d_model'])  # why dim?
-        target_embedding = PositionalEncoding(
-            num_embeddings=target_dictionary.vocabulary_size,
-            embedding_dim=config['d_model'],
-            dim=config['d_model'])  # why dim?
-    else:
-        source_embedding = nn.Embedding(
-            num_embeddings=source_dictionary.vocabulary_size,
-            embedding_dim=config['d_model'])
-        target_embedding = nn.Embedding(
-            num_embeddings=target_dictionary.vocabulary_size,
-            embedding_dim=config['d_model'])
+    model = build_model(config, source_dictionary.vocabulary_size, target_dictionary.vocabulary_size)
 
-    encoder = TransformerEncoder(
-        layers_count=config['layers_count'],
-        d_model=config['d_model'],
-        heads_count=config['heads_count'],
-        d_ff=config['d_ff'],
-        dropout_prob=config['dropout_prob'],
-        embedding=source_embedding)
-
-    decoder = TransformerDecoder(
-        layers_count=config['layers_count'],
-        d_model=config['d_model'],
-        heads_count=config['heads_count'],
-        d_ff=config['d_ff'],
-        dropout_prob=config['dropout_prob'],
-        embedding=target_embedding)
-
-    model = Transformer(encoder, decoder)
     logger.info(model)
-    logger.info('Encoder : {parameters_count} parameters'.format(parameters_count=sum([p.nelement() for p in encoder.parameters()])))
-    logger.info('Decoder : {parameters_count} parameters'.format(parameters_count=sum([p.nelement() for p in decoder.parameters()])))
+    logger.info('Encoder : {parameters_count} parameters'.format(parameters_count=sum([p.nelement() for p in model.encoder.parameters()])))
+    logger.info('Decoder : {parameters_count} parameters'.format(parameters_count=sum([p.nelement() for p in model.decoder.parameters()])))
     logger.info('Total : {parameters_count} parameters'.format(parameters_count=sum([p.nelement() for p in model.parameters()])))
 
     logger.info('Loading datasets...')
