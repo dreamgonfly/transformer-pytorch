@@ -1,7 +1,7 @@
 from models import build_model
 from datasets import IndexedInputTargetTranslationDataset
 from dictionaries import IndexDictionary
-from losses import MaskedCrossEntropyLoss, LabelSmoothingLoss
+from losses import TokenCrossEntropyLoss, LabelSmoothingLoss
 from metrics import AccuracyMetric
 from optimizers import NoamOptimizer
 from trainer import EpochSeq2SeqTrainer, input_target_collate_fn
@@ -107,8 +107,12 @@ def run_trainer(config):
         batch_size=config['batch_size'],
         collate_fn=input_target_collate_fn)
 
-    loss_function = LabelSmoothingLoss(label_smoothing=config['label_smoothing'],
-                                       vocabulary_size=target_dictionary.vocabulary_size)
+    if config['label_smoothing'] > 0.0:
+        loss_function = LabelSmoothingLoss(label_smoothing=config['label_smoothing'],
+                                           vocabulary_size=target_dictionary.vocabulary_size)
+    else:
+        loss_function = TokenCrossEntropyLoss()
+
     accuracy_function = AccuracyMetric()
 
     if config['optimizer'] == 'Noam':
