@@ -8,7 +8,6 @@ from trainer import EpochSeq2SeqTrainer, input_target_collate_fn
 from utils.log import get_logger
 
 import torch
-from torch import nn
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 import numpy as np
@@ -22,9 +21,9 @@ parser = ArgumentParser(description='Train Transformer')
 parser.add_argument('--config', type=str, default=None)
 
 parser.add_argument('--data_dir', type=str, default='data/example/processed')
-parser.add_argument('--save_config', type=str, default='checkpoints/example_config.json')
-parser.add_argument('--save_checkpoint', type=str, default='checkpoints/example_model.pth')
-parser.add_argument('--save_log', type=str, default='logs/example.log')
+parser.add_argument('--save_config', type=str, default=None)
+parser.add_argument('--save_checkpoint', type=str, default=None)
+parser.add_argument('--save_log', type=str, default=None)
 
 parser.add_argument('--device', type=str, default='cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -66,7 +65,7 @@ def run_trainer(config):
 
     run_name = run_name_format.format(**config, timestamp=datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))
 
-    logger = get_logger(run_name)
+    logger = get_logger(run_name, save_log=config['save_log'])
     logger.info(f'Run name : {run_name}')
     logger.info(config)
 
@@ -129,6 +128,8 @@ def run_trainer(config):
         optimizer=optimizer,
         logger=logger,
         run_name=run_name,
+        save_config=config['save_config'],
+        save_checkpoint=config['save_checkpoint'],
         config=config
     )
 

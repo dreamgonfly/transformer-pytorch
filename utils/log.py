@@ -5,13 +5,16 @@ import logging
 BASE_DIR = dirname(dirname(abspath(__file__)))
 
 
-def get_logger(run_name):
+def get_logger(run_name, save_log=None):
     log_dir = join(BASE_DIR, 'logs')
     if not exists(log_dir):
         os.makedirs(log_dir)
 
     log_filename = f'{run_name}.log'
-    log_filepath = join(log_dir, log_filename)
+    if save_log is None:
+        log_filepath = join(log_dir, log_filename)
+    else:
+        log_filepath = save_log
 
     logger = logging.getLogger(run_name)
 

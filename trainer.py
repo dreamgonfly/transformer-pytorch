@@ -18,6 +18,7 @@ class EpochSeq2SeqTrainer:
                  train_dataloader, val_dataloader,
                  loss_function, metric_function, optimizer,
                  logger, run_name,
+                 save_config, save_checkpoint,
                  config):
 
         self.config = config
@@ -38,7 +39,10 @@ class EpochSeq2SeqTrainer:
         if not exists(self.checkpoint_dir):
             makedirs(self.checkpoint_dir)
 
-        config_filepath = join(self.checkpoint_dir, 'config.json')
+        if save_config is None:
+            config_filepath = join(self.checkpoint_dir, 'config.json')
+        else:
+            config_filepath = save_config
         with open(config_filepath, 'w') as config_file:
             json.dump(self.config, config_file)
 
@@ -53,6 +57,7 @@ class EpochSeq2SeqTrainer:
         self.best_val_metric = None
         self.best_checkpoint_filepath = None
 
+        self.save_checkpoint = save_checkpoint
         self.save_format = 'epoch={epoch:0>3}-val_loss={val_loss:<.3}-val_metrics={val_metrics}.pth'
 
         self.log_format = (
@@ -144,7 +149,10 @@ class EpochSeq2SeqTrainer:
             val_metrics='-'.join(['{:<.3}'.format(v) for v in val_epoch_metrics])
         )
 
-        checkpoint_filepath = join(self.checkpoint_dir, checkpoint_filename)
+        if self.save_checkpoint is None:
+            checkpoint_filepath = join(self.checkpoint_dir, checkpoint_filename)
+        else:
+            checkpoint_filepath = self.save_checkpoint
 
         save_state = {
             'epoch': epoch,

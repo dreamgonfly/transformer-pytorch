@@ -43,13 +43,16 @@ predictor = Predictor(
 )
 
 timestamp = datetime.now()
-eval_filename = 'logs/eval-{config}-time={timestamp}.csv'.format(
-    config=args.config.replace('/', '-'),
-    timestamp=timestamp.strftime("%Y_%m_%d_%H_%M_%S"))
+if args.save_result is None:
+    eval_filepath = 'logs/eval-{config}-time={timestamp}.csv'.format(
+        config=args.config.replace('/', '-'),
+        timestamp=timestamp.strftime("%Y_%m_%d_%H_%M_%S"))
+else:
+    eval_filepath = save_result
 
 evaluator = Evaluator(
     predictor=predictor,
-    save_filepath=eval_filename
+    save_filepath=eval_filepath
 )
 
 print('Evaluating...')
