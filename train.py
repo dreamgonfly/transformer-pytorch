@@ -1,6 +1,6 @@
 from models import build_model
-from datasets import TokenizedTranslationDatasetOnTheFly, IndexedInputTargetTranslationDatasetOnTheFly
-from dictionaries import IndexDictionaryOnTheFly, shared_tokens_generator, source_tokens_generator, target_tokens_generator
+from datasets import IndexedInputTargetTranslationDataset
+from dictionaries import IndexDictionary
 from losses import MaskedCrossEntropyLoss, LabelSmoothingLoss
 from metrics import AccuracyMetric
 from optimizers import NoamOptimizer
@@ -21,7 +21,7 @@ import random
 parser = ArgumentParser(description='Train Transformer')
 parser.add_argument('--config', type=str, default=None)
 
-parser.add_argument('--data', type=str, default='data/example/processed')
+parser.add_argument('--data_dir', type=str, default='data/example/processed')
 parser.add_argument('--save_config', type=str, default='checkpoints/example_config.json')
 parser.add_argument('--save_checkpoint', type=str, default='checkpoints/example_model.pth')
 parser.add_argument('--save_log', type=str, default='logs/example.log')
@@ -33,7 +33,6 @@ parser.add_argument('--print_every', type=int, default=1)
 parser.add_argument('--save_every', type=int, default=1)
 
 parser.add_argument('--vocabulary_size', type=int, default=None)
-parser.add_argument('--share_dictionary', type=bool, default=False)
 parser.add_argument('--positional_encoding', action='store_true')
 
 parser.add_argument('--d_model', type=int, default=128)
@@ -43,7 +42,7 @@ parser.add_argument('--d_ff', type=int, default=128)
 parser.add_argument('--dropout_prob', type=float, default=0.1)
 
 parser.add_argument('--label_smoothing', type=float, default=0.1)
-parser.add_argument('--optimizer', type=str, default="Noam", choices=["Noam", "Adam"])
+parser.add_argument('--optimizer', type=str, default="Adam", choices=["Noam", "Adam"])
 parser.add_argument('--lr', type=float, default=0.001)
 parser.add_argument('--clip_grads', action='store_true')
 
@@ -72,18 +71,8 @@ def run_trainer(config):
     logger.info(config)
 
     logger.info('Constructing dictionaries...')
-    tokenized_dataset = TokenizedTranslationDatasetOnTheFly('train', limit=config['dataset_limit'])
-
-    if config['share_dictionary']:
-        source_generator = shared_tokens_generator(tokenized_dataset)
-        source_dictionary = IndexDictionaryOnTheFly(source_generator, vocabulary_size=config['vocabulary_size'])
-        target_generator = shared_tokens_generator(tokenized_dataset)
-        target_dictionary = IndexDictionaryOnTheFly(target_generator, vocabulary_size=config['vocabulary_size'])
-    else:
-        source_generator = source_tokens_generator(tokenized_dataset)
-        source_dictionary = IndexDictionaryOnTheFly(source_generator, vocabulary_size=config['vocabulary_size'])
-        target_generator = target_tokens_generator(tokenized_dataset)
-        target_dictionary = IndexDictionaryOnTheFly(target_generator, vocabulary_size=config['vocabulary_size'])
+    source_dictionary = IndexDictionary.load(config['data_dir'], mode='source', vocabulary_size=config['vocabulary_size'])
+    target_dictionary = IndexDictionary.load(config['data_dir'], mode='target', vocabulary_size=config['vocabulary_size'])
     logger.info(f'Source dictionary vocabulary : {source_dictionary.vocabulary_size} tokens')
     logger.info(f'Target dictionary vocabulary : {target_dictionary.vocabulary_size} tokens')
 
@@ -96,16 +85,16 @@ def run_trainer(config):
     logger.info('Total : {parameters_count} parameters'.format(parameters_count=sum([p.nelement() for p in model.parameters()])))
 
     logger.info('Loading datasets...')
-    train_dataset = IndexedInputTargetTranslationDatasetOnTheFly(
-        'train',
-        source_dictionary,
-        target_dictionary,
+    train_dataset = IndexedInputTargetTranslationDataset(
+        data_dir=config['data_dir'],
+        phase='train',
+        vocabulary_size=config['vocabulary_size'],
         limit=config['dataset_limit'])
 
-    val_dataset = IndexedInputTargetTranslationDatasetOnTheFly(
-        'val',
-        source_dictionary,
-        target_dictionary,
+    val_dataset = IndexedInputTargetTranslationDataset(
+        data_dir=config['data_dir'],
+        phase='val',
+        vocabulary_size=config['vocabulary_size'],
         limit=config['dataset_limit'])
 
     train_dataloader = DataLoader(

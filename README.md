@@ -17,7 +17,7 @@ This repo focuses on clean, readable, and modular implementation of the paper.
 ### Prepare datasets
 This repo comes with example data in `data/` directory. To begin, you will need to prepare datasets with given data as follows:
 ```
-$ python prepare_datasets.py --train_source=data/example/raw/src-train.txt --train_target=data/example/raw/tgt-train.txt --val_source=data/example/raw/src-val.txt --val_target=data/example/raw/tgt-val.txt --save_data=data/example/processed
+$ python prepare_datasets.py --train_source=data/example/raw/src-train.txt --train_target=data/example/raw/tgt-train.txt --val_source=data/example/raw/src-val.txt --val_target=data/example/raw/tgt-val.txt --save_data_dir=data/example/processed
 ```
 
 The example data is brought from [OpenNMT-py](https://github.com/OpenNMT/OpenNMT-py).
@@ -34,7 +34,7 @@ Below are the provided example data files.
 To train model, provide the train script with a path to processed data and save files as follows:
 
 ```
-$ python train.py --data=data/example/processed --save_config=checkpoints/example_config.json --save_checkpoint=checkpoints/example_model.pth --save_log=logs/example.log 
+$ python train.py --data_dir=data/example/processed --save_config=checkpoints/example_config.json --save_checkpoint=checkpoints/example_model.pth --save_log=logs/example.log 
 ```
 
 This saves model config and checkpoints to given files, respectively.
