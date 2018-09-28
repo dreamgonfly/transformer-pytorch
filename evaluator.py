@@ -1,4 +1,5 @@
 from nltk.translate.bleu_score import sentence_bleu, corpus_bleu, SmoothingFunction
+from tqdm import tqdm
 
 
 class Evaluator:
@@ -11,7 +12,10 @@ class Evaluator:
     def evaluate_dataset(self, test_dataset):
         tokenize = lambda x: x.split()
 
-        predictions = [self.predictor.predict_one(source, num_candidates=1)[0] for source, target in test_dataset]
+        predictions = []
+        for source, target in tqdm(test_dataset):
+            prediction = self.predictor.predict_one(source, num_candidates=1)[0]
+            predictions.append(prediction)
 
         hypotheses = [tokenize(prediction) for prediction in predictions]
         list_of_references = [[tokenize(target)] for source, target in test_dataset]
@@ -30,6 +34,6 @@ class Evaluator:
                 )
                 file.write(line + '\n')
 
-        bleu_score = corpus_bleu(list_of_references, hypotheses)
+        bleu_score = corpus_bleu(list_of_references, hypotheses, smoothing_function=smoothing_function.method3)
 
         return bleu_score

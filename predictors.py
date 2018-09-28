@@ -1,5 +1,7 @@
-import torch
 from beam import Beam
+from utils.pad import pad_masking
+
+import torch
 
 
 class Predictor:
@@ -20,8 +22,8 @@ class Predictor:
         source_tensor = torch.tensor(source_preprocessed).unsqueeze(0)  # why unsqueeze?
         length_tensor = torch.tensor(len(source_preprocessed)).unsqueeze(0)
 
-        sources_mask = self.model.pad_masking(source_tensor, source_tensor.size(1))
-        memory_mask = self.model.pad_masking(source_tensor, 1)
+        sources_mask = pad_masking(source_tensor, source_tensor.size(1))
+        memory_mask = pad_masking(source_tensor, 1)
         memory = self.model.encoder(source_tensor, sources_mask)
 
         decoder_state = self.model.decoder.init_decoder_state()
@@ -63,4 +65,4 @@ class Predictor:
         self.attentions = attentions
         self.hypothesises = [[token.item() for token in h] for h in hypothesises]
         hs = [self.postprocess(h) for h in self.hypothesises]
-        return hs
+        return list(reversed(hs))

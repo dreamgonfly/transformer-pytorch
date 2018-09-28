@@ -2,7 +2,7 @@ from evaluator import Evaluator
 from predictors import Predictor
 from models import build_model
 from datasets import TranslationDataset
-from datasets import IndexedInputTargetTranslationDatasetOnTheFly
+from datasets import IndexedInputTargetTranslationDataset
 from dictionaries import IndexDictionary
 
 from argparse import ArgumentParser
@@ -13,6 +13,7 @@ parser = ArgumentParser(description='Predict translation')
 parser.add_argument('--save_result', type=str, default=None)
 parser.add_argument('--config', type=str, required=True)
 parser.add_argument('--checkpoint', type=str, required=True)
+parser.add_argument('--phase', type=str, default='val', choices=['train', 'val'])
 
 args = parser.parse_args()
 with open(args.config) as f:
@@ -26,7 +27,7 @@ print('Building model...')
 model = build_model(config, source_dictionary.vocabulary_size, target_dictionary.vocabulary_size)
 
 predictor = Predictor(
-    preprocess=IndexedInputTargetTranslationDatasetOnTheFly.preprocess(source_dictionary),
+    preprocess=IndexedInputTargetTranslationDataset.preprocess(source_dictionary),
     postprocess=lambda x: ' '.join([token for token in target_dictionary.tokenify_indexes(x) if token != '<EndSent>']),
     model=model,
     checkpoint_filepath=args.checkpoint
@@ -46,8 +47,8 @@ evaluator = Evaluator(
 )
 
 print('Evaluating...')
-val_dataset = TranslationDataset(config['data_dir'], 'val')
-bleu_score = evaluator.evaluate_dataset(val_dataset)
+test_dataset = TranslationDataset(config['data_dir'], args.phase, limit=1000)
+bleu_score = evaluator.evaluate_dataset(test_dataset)
 print('Evaluation time :', datetime.now() - timestamp)
 
 print("BLEU score :", bleu_score)
