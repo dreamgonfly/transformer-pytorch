@@ -39,16 +39,16 @@ $ python train.py --data_dir=data/example/processed --save_config=checkpoints/ex
 
 This saves model config and checkpoints to given files, respectively.
 You can play around with hyperparameters of the model with command line arguments. 
-For example, add `--layers_count=4` to set the number of layers as 5. 
+For example, add `--epochs=300` to set the number of epochs to 300. 
 
 ### Translate
 To translate a sentence in source language to target language:
 ```
 $ python predict.py --source="There is an imbalance here ." --config=checkpoints/example_config.json --checkpoint=checkpoints/example_model.pth
 
-Candidate 1 : Hier fehlt das Gleichgewicht .
-Candidate 2 : Hier fehlt das .
-Candidate 3 : Hier fehlt .
+Candidate 0 : Hier fehlt das Gleichgewicht .
+Candidate 1 : Hier fehlt das das Gleichgewicht .
+Candidate 2 : Hier fehlt das das das Gleichgewicht .
 ```
 
 It will give you translation candidates of the given source sentence.
@@ -59,7 +59,7 @@ To calculate BLEU score of a trained model:
 ```
 $ python evaluate.py --save_result=logs/example_eval.txt --config=checkpoints/example_config.json --checkpoint=checkpoints/example_model.pth
 
-BLEU score : 10.0
+BLEU score : 0.0007947
 ```
 
 ## File description
