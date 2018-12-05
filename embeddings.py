@@ -12,7 +12,7 @@ class PositionalEncoding(nn.Module):
     :cite:`DBLP:journals/corr/VaswaniSPUJGKP17`
 
     Args:
-       dropout (float): dropout parameter
+       dropout_prob (float): dropout parameter
        dim (int): embedding size
     """
 
@@ -25,7 +25,7 @@ class PositionalEncoding(nn.Module):
                              -(math.log(10000.0) / dim)).float())
         pe[:, 0::2] = torch.sin(position.float() * div_term)
         pe[:, 1::2] = torch.cos(position.float() * div_term)
-        pe = pe.unsqueeze(1)
+        pe = pe.unsqueeze(0)
 
         self.num_embeddings = num_embeddings
         self.embedding_dim = embedding_dim
@@ -39,8 +39,8 @@ class PositionalEncoding(nn.Module):
         x = self.embbedding(x)
         x = x * math.sqrt(self.dim)
         if step is None:
-            x = x + self.pe[:x.size(0)]
+            x = x + self.pe[:, :x.size(1)]
         else:
-            x = x + self.pe[step]
+            x = x + self.pe[:, step]
         x = self.dropout(x)
         return x
