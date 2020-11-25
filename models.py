@@ -10,38 +10,42 @@ PAD_TOKEN_ID = 0
 
 
 def build_model(config, source_vocabulary_size, target_vocabulary_size):
-    if config['positional_encoding']:
+    if config["positional_encoding"]:
         source_embedding = PositionalEncoding(
             num_embeddings=source_vocabulary_size,
-            embedding_dim=config['d_model'],
-            dim=config['d_model'])  # why dim?
+            embedding_dim=config["d_model"],
+            dim=config["d_model"],
+        )  # why dim?
         target_embedding = PositionalEncoding(
             num_embeddings=target_vocabulary_size,
-            embedding_dim=config['d_model'],
-            dim=config['d_model'])  # why dim?
+            embedding_dim=config["d_model"],
+            dim=config["d_model"],
+        )  # why dim?
     else:
         source_embedding = nn.Embedding(
-            num_embeddings=source_vocabulary_size,
-            embedding_dim=config['d_model'])
+            num_embeddings=source_vocabulary_size, embedding_dim=config["d_model"]
+        )
         target_embedding = nn.Embedding(
-            num_embeddings=target_vocabulary_size,
-            embedding_dim=config['d_model'])
+            num_embeddings=target_vocabulary_size, embedding_dim=config["d_model"]
+        )
 
     encoder = TransformerEncoder(
-        layers_count=config['layers_count'],
-        d_model=config['d_model'],
-        heads_count=config['heads_count'],
-        d_ff=config['d_ff'],
-        dropout_prob=config['dropout_prob'],
-        embedding=source_embedding)
+        layers_count=config["layers_count"],
+        d_model=config["d_model"],
+        heads_count=config["heads_count"],
+        d_ff=config["d_ff"],
+        dropout_prob=config["dropout_prob"],
+        embedding=source_embedding,
+    )
 
     decoder = TransformerDecoder(
-        layers_count=config['layers_count'],
-        d_model=config['d_model'],
-        heads_count=config['heads_count'],
-        d_ff=config['d_ff'],
-        dropout_prob=config['dropout_prob'],
-        embedding=target_embedding)
+        layers_count=config["layers_count"],
+        d_model=config["d_model"],
+        heads_count=config["heads_count"],
+        d_ff=config["d_ff"],
+        dropout_prob=config["dropout_prob"],
+        embedding=target_embedding,
+    )
 
     model = Transformer(encoder, decoder)
 
@@ -49,7 +53,6 @@ def build_model(config, source_vocabulary_size, target_vocabulary_size):
 
 
 class Transformer(nn.Module):
-
     def __init__(self, encoder, decoder):
         super(Transformer, self).__init__()
 
@@ -67,19 +70,23 @@ class Transformer(nn.Module):
         inputs_mask = subsequent_masking(inputs) | pad_masking(inputs, inputs_len)
 
         memory = self.encoder(sources, sources_mask)  # (batch_size, seq_len, d_model)
-        outputs, state = self.decoder(inputs, memory, memory_mask, inputs_mask)  # (batch_size, seq_len, d_model)
+        outputs, state = self.decoder(
+            inputs, memory, memory_mask, inputs_mask
+        )  # (batch_size, seq_len, d_model)
         return outputs
 
 
 class TransformerEncoder(nn.Module):
-
     def __init__(self, layers_count, d_model, heads_count, d_ff, dropout_prob, embedding):
         super(TransformerEncoder, self).__init__()
 
         self.d_model = d_model
         self.embedding = embedding
         self.encoder_layers = nn.ModuleList(
-            [TransformerEncoderLayer(d_model, heads_count, d_ff, dropout_prob) for _ in range(layers_count)]
+            [
+                TransformerEncoderLayer(d_model, heads_count, d_ff, dropout_prob)
+                for _ in range(layers_count)
+            ]
         )
 
     def forward(self, sources, mask):
@@ -97,12 +104,15 @@ class TransformerEncoder(nn.Module):
 
 
 class TransformerEncoderLayer(nn.Module):
-
     def __init__(self, d_model, heads_count, d_ff, dropout_prob):
         super(TransformerEncoderLayer, self).__init__()
 
-        self.self_attention_layer = Sublayer(MultiHeadAttention(heads_count, d_model, dropout_prob), d_model)
-        self.pointwise_feedforward_layer = Sublayer(PointwiseFeedForwardNetwork(d_ff, d_model, dropout_prob), d_model)
+        self.self_attention_layer = Sublayer(
+            MultiHeadAttention(heads_count, d_model, dropout_prob), d_model
+        )
+        self.pointwise_feedforward_layer = Sublayer(
+            PointwiseFeedForwardNetwork(d_ff, d_model, dropout_prob), d_model
+        )
         self.dropout = nn.Dropout(dropout_prob)
 
     def forward(self, sources, sources_mask):
@@ -116,14 +126,16 @@ class TransformerEncoderLayer(nn.Module):
 
 
 class TransformerDecoder(nn.Module):
-
     def __init__(self, layers_count, d_model, heads_count, d_ff, dropout_prob, embedding):
         super(TransformerDecoder, self).__init__()
 
         self.d_model = d_model
         self.embedding = embedding
         self.decoder_layers = nn.ModuleList(
-            [TransformerDecoderLayer(d_model, heads_count, d_ff, dropout_prob) for _ in range(layers_count)]
+            [
+                TransformerDecoderLayer(d_model, heads_count, d_ff, dropout_prob)
+                for _ in range(layers_count)
+            ]
         )
         self.generator = nn.Linear(embedding.embedding_dim, embedding.num_embeddings)
         self.generator.weight = self.embedding.weight
@@ -141,20 +153,20 @@ class TransformerDecoder(nn.Module):
         for layer_index, decoder_layer in enumerate(self.decoder_layers):
             if state is None:
                 inputs = decoder_layer(inputs, memory, memory_mask, inputs_mask)
-            else: # Use cache
+            else:  # Use cache
                 layer_cache = state.layer_caches[layer_index]
                 # print('inputs_mask', inputs_mask)
                 inputs = decoder_layer(inputs, memory, memory_mask, inputs_mask, layer_cache)
 
                 state.update_state(
                     layer_index=layer_index,
-                    layer_mode='self-attention',
+                    layer_mode="self-attention",
                     key_projected=decoder_layer.self_attention_layer.sublayer.key_projected,
                     value_projected=decoder_layer.self_attention_layer.sublayer.value_projected,
                 )
                 state.update_state(
                     layer_index=layer_index,
-                    layer_mode='memory-attention',
+                    layer_mode="memory-attention",
                     key_projected=decoder_layer.memory_attention_layer.sublayer.key_projected,
                     value_projected=decoder_layer.memory_attention_layer.sublayer.value_projected,
                 )
@@ -167,12 +179,18 @@ class TransformerDecoder(nn.Module):
 
 
 class TransformerDecoderLayer(nn.Module):
-
     def __init__(self, d_model, heads_count, d_ff, dropout_prob):
         super(TransformerDecoderLayer, self).__init__()
-        self.self_attention_layer = Sublayer(MultiHeadAttention(heads_count, d_model, dropout_prob, mode='self-attention'), d_model)
-        self.memory_attention_layer = Sublayer(MultiHeadAttention(heads_count, d_model, dropout_prob, mode='memory-attention'), d_model)
-        self.pointwise_feedforward_layer = Sublayer(PointwiseFeedForwardNetwork(d_ff, d_model, dropout_prob), d_model)
+        self.self_attention_layer = Sublayer(
+            MultiHeadAttention(heads_count, d_model, dropout_prob, mode="self-attention"), d_model,
+        )
+        self.memory_attention_layer = Sublayer(
+            MultiHeadAttention(heads_count, d_model, dropout_prob, mode="memory-attention"),
+            d_model,
+        )
+        self.pointwise_feedforward_layer = Sublayer(
+            PointwiseFeedForwardNetwork(d_ff, d_model, dropout_prob), d_model
+        )
 
     def forward(self, inputs, memory, memory_mask, inputs_mask, layer_cache=None):
         # print('self attention')
@@ -185,7 +203,6 @@ class TransformerDecoderLayer(nn.Module):
 
 
 class Sublayer(nn.Module):
-
     def __init__(self, sublayer, d_model):
         super(Sublayer, self).__init__()
 
@@ -199,7 +216,6 @@ class Sublayer(nn.Module):
 
 
 class LayerNormalization(nn.Module):
-
     def __init__(self, features_count, epsilon=1e-6):
         super(LayerNormalization, self).__init__()
 
@@ -216,12 +232,11 @@ class LayerNormalization(nn.Module):
 
 
 class MultiHeadAttention(nn.Module):
-
-    def __init__(self, heads_count, d_model, dropout_prob, mode='self-attention'):
+    def __init__(self, heads_count, d_model, dropout_prob, mode="self-attention"):
         super(MultiHeadAttention, self).__init__()
 
         assert d_model % heads_count == 0
-        assert mode in ('self-attention', 'memory-attention')
+        assert mode in ("self-attention", "memory-attention")
 
         self.d_head = d_model // heads_count
         self.heads_count = heads_count
@@ -259,15 +274,19 @@ class MultiHeadAttention(nn.Module):
             key_projected = self.key_projection(key)
             value_projected = self.value_projection(value)
         else:  # Use cache
-            if self.mode == 'self-attention':
+            if self.mode == "self-attention":
                 key_projected = self.key_projection(key)
                 value_projected = self.value_projection(value)
 
-                key_projected = torch.cat([key_projected, layer_cache[self.mode]['key_projected']], dim=1)
-                value_projected = torch.cat([value_projected, layer_cache[self.mode]['value_projected']], dim=1)
-            elif self.mode == 'memory-attention':
-                key_projected = layer_cache[self.mode]['key_projected']
-                value_projected = layer_cache[self.mode]['value_projected']
+                key_projected = torch.cat(
+                    [key_projected, layer_cache[self.mode]["key_projected"]], dim=1
+                )
+                value_projected = torch.cat(
+                    [value_projected, layer_cache[self.mode]["value_projected"]], dim=1
+                )
+            elif self.mode == "memory-attention":
+                key_projected = layer_cache[self.mode]["key_projected"]
+                value_projected = layer_cache[self.mode]["value_projected"]
 
         # For cache
         self.key_projected = key_projected
@@ -276,14 +295,26 @@ class MultiHeadAttention(nn.Module):
         batch_size, key_len, d_model = key_projected.size()
         batch_size, value_len, d_model = value_projected.size()
 
-        query_heads = query_projected.view(batch_size, query_len, self.heads_count, d_head).transpose(1, 2)  # (batch_size, heads_count, query_len, d_head)
+        query_heads = query_projected.view(
+            batch_size, query_len, self.heads_count, d_head
+        ).transpose(
+            1, 2
+        )  # (batch_size, heads_count, query_len, d_head)
         # print('query_heads', query_heads.shape)
         # print(batch_size, key_len, self.heads_count, d_head)
         # print(key_projected.shape)
-        key_heads = key_projected.view(batch_size, key_len, self.heads_count, d_head).transpose(1, 2)  # (batch_size, heads_count, key_len, d_head)
-        value_heads = value_projected.view(batch_size, value_len, self.heads_count, d_head).transpose(1, 2)  # (batch_size, heads_count, value_len, d_head)
+        key_heads = key_projected.view(batch_size, key_len, self.heads_count, d_head).transpose(
+            1, 2
+        )  # (batch_size, heads_count, key_len, d_head)
+        value_heads = value_projected.view(
+            batch_size, value_len, self.heads_count, d_head
+        ).transpose(
+            1, 2
+        )  # (batch_size, heads_count, value_len, d_head)
 
-        attention_weights = self.scaled_dot_product(query_heads, key_heads)  # (batch_size, heads_count, query_len, key_len)
+        attention_weights = self.scaled_dot_product(
+            query_heads, key_heads
+        )  # (batch_size, heads_count, query_len, key_len)
 
         if mask is not None:
             # print('mode', self.mode)
@@ -295,10 +326,16 @@ class MultiHeadAttention(nn.Module):
         self.attention = self.softmax(attention_weights)  # Save attention to the object
         # print('attention_weights', attention_weights.shape)
         attention_dropped = self.dropout(self.attention)
-        context_heads = torch.matmul(attention_dropped, value_heads)  # (batch_size, heads_count, query_len, d_head)
+        context_heads = torch.matmul(
+            attention_dropped, value_heads
+        )  # (batch_size, heads_count, query_len, d_head)
         # print('context_heads', context_heads.shape)
-        context_sequence = context_heads.transpose(1, 2).contiguous()  # (batch_size, query_len, heads_count, d_head)
-        context = context_sequence.view(batch_size, query_len, d_model)  # (batch_size, query_len, d_model)
+        context_sequence = context_heads.transpose(
+            1, 2
+        ).contiguous()  # (batch_size, query_len, heads_count, d_head)
+        context = context_sequence.view(
+            batch_size, query_len, d_model
+        )  # (batch_size, query_len, d_model)
         final_output = self.final_projection(context)
         # print('final_output', final_output.shape)
 
@@ -312,13 +349,14 @@ class MultiHeadAttention(nn.Module):
              key_heads: (batch_size, heads_count, key_len, d_head)
         """
         key_heads_transposed = key_heads.transpose(2, 3)
-        dot_product = torch.matmul(query_heads, key_heads_transposed)  # (batch_size, heads_count, query_len, key_len)
+        dot_product = torch.matmul(
+            query_heads, key_heads_transposed
+        )  # (batch_size, heads_count, query_len, key_len)
         attention_weights = dot_product / np.sqrt(self.d_head)
         return attention_weights
 
 
 class PointwiseFeedForwardNetwork(nn.Module):
-
     def __init__(self, d_ff, d_model, dropout_prob):
         super(PointwiseFeedForwardNetwork, self).__init__()
 
@@ -340,15 +378,14 @@ class PointwiseFeedForwardNetwork(nn.Module):
 
 
 class DecoderState:
-
     def __init__(self):
         self.previous_inputs = torch.tensor([])
-        self.layer_caches = defaultdict(lambda: {'self-attention': None, 'memory-attention': None})
+        self.layer_caches = defaultdict(lambda: {"self-attention": None, "memory-attention": None})
 
     def update_state(self, layer_index, layer_mode, key_projected, value_projected):
         self.layer_caches[layer_index][layer_mode] = {
-            'key_projected': key_projected,
-            'value_projected': value_projected
+            "key_projected": key_projected,
+            "value_projected": value_projected,
         }
 
     # def repeat_beam_size_times(self, beam_size): # memory만 repeat하면 되는데 state에 memory는 넣지 않기로 했다.
@@ -357,7 +394,7 @@ class DecoderState:
 
     def beam_update(self, positions):
         for layer_index in self.layer_caches:
-            for mode in ('self-attention', 'memory-attention'):
+            for mode in ("self-attention", "memory-attention"):
                 if self.layer_caches[layer_index][mode] is not None:
                     for projection in self.layer_caches[layer_index][mode]:
                         cache = self.layer_caches[layer_index][mode][projection]

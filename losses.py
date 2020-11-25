@@ -3,12 +3,11 @@ from torch import nn
 
 
 class TokenCrossEntropyLoss(nn.Module):
-
     def __init__(self, pad_index=0):
         super(TokenCrossEntropyLoss, self).__init__()
 
         self.pad_index = pad_index
-        self.base_loss_function = nn.CrossEntropyLoss(reduction='sum', ignore_index=pad_index)
+        self.base_loss_function = nn.CrossEntropyLoss(reduction="sum", ignore_index=pad_index)
 
     def forward(self, outputs, targets):
         batch_size, seq_len, vocabulary_size = outputs.size()
@@ -29,6 +28,7 @@ class LabelSmoothingLoss(nn.Module):
     KL-divergence between q_{smoothed ground truth prob.}(w)
     and p_{prob. computed by model}(w) is minimized.
     """
+
     def __init__(self, label_smoothing, vocabulary_size, pad_index=0):
         assert 0.0 < label_smoothing <= 1.0
 
@@ -36,12 +36,14 @@ class LabelSmoothingLoss(nn.Module):
 
         self.pad_index = pad_index
         self.log_softmax = nn.LogSoftmax(dim=-1)
-        self.criterion = nn.KLDivLoss(reduction='sum')
+        self.criterion = nn.KLDivLoss(reduction="sum")
 
         smoothing_value = label_smoothing / (vocabulary_size - 2)  # exclude pad and true label
         smoothed_targets = torch.full((vocabulary_size,), smoothing_value)
         smoothed_targets[self.pad_index] = 0
-        self.register_buffer('smoothed_targets', smoothed_targets.unsqueeze(0))  # (1, vocabulary_size)
+        self.register_buffer(
+            "smoothed_targets", smoothed_targets.unsqueeze(0)
+        )  # (1, vocabulary_size)
 
         self.confidence = 1.0 - label_smoothing
 

@@ -3,7 +3,6 @@ from tqdm import tqdm
 
 
 class Evaluator:
-
     def __init__(self, predictor, save_filepath):
 
         self.predictor = predictor
@@ -21,19 +20,23 @@ class Evaluator:
         list_of_references = [[tokenize(target)] for source, target in test_dataset]
         smoothing_function = SmoothingFunction()
 
-        with open(self.save_filepath, 'w') as file:
-            for (source, target), prediction, hypothesis, references in zip(test_dataset, predictions,
-                                                                            hypotheses, list_of_references):
-                sentence_bleu_score = sentence_bleu(references, hypothesis,
-                                                    smoothing_function=smoothing_function.method3)
+        with open(self.save_filepath, "w") as file:
+            for (source, target), prediction, hypothesis, references in zip(
+                test_dataset, predictions, hypotheses, list_of_references
+            ):
+                sentence_bleu_score = sentence_bleu(
+                    references, hypothesis, smoothing_function=smoothing_function.method3,
+                )
                 line = "{bleu_score}\t{source}\t{target}\t|\t{prediction}".format(
                     bleu_score=sentence_bleu_score,
                     source=source,
                     target=target,
-                    prediction=prediction
+                    prediction=prediction,
                 )
-                file.write(line + '\n')
+                file.write(line + "\n")
 
-        bleu_score = corpus_bleu(list_of_references, hypotheses, smoothing_function=smoothing_function.method3)
+        bleu_score = corpus_bleu(
+            list_of_references, hypotheses, smoothing_function=smoothing_function.method3,
+        )
 
         return bleu_score

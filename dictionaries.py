@@ -4,15 +4,14 @@ from os import makedirs
 
 BASE_DIR = dirname(abspath(__file__))
 
-PAD_TOKEN = '<PAD>'
-UNK_TOKEN = '<UNK>'
-START_TOKEN = '<StartSent>'
-END_TOKEN = '<EndSent>'
+PAD_TOKEN = "<PAD>"
+UNK_TOKEN = "<UNK>"
+START_TOKEN = "<StartSent>"
+END_TOKEN = "<EndSent>"
 
 
 class IndexDictionary:
-
-    def __init__(self, iterable=None, mode='shared', vocabulary_size=None):
+    def __init__(self, iterable=None, mode="shared", vocabulary_size=None):
 
         self.special_tokens = [PAD_TOKEN, UNK_TOKEN, START_TOKEN, END_TOKEN]
 
@@ -57,26 +56,30 @@ class IndexDictionary:
         else:
             all_tokens = [token for token, count in counter.items()]
             vocab_tokens = self.special_tokens + all_tokens
-            token_counts = [0] * len(self.special_tokens) + [count for token, count in counter.items()]
+            token_counts = [0] * len(self.special_tokens) + [
+                count for token, count in counter.items()
+            ]
 
         return vocab_tokens, token_counts
 
     def save(self, data_dir):
 
-        vocabulary_filepath = join(data_dir, f'vocabulary-{self.mode}.txt')
-        with open(vocabulary_filepath, 'w') as file:
-            for vocab_index, (vocab_token, count) in enumerate(zip(self.vocab_tokens, self.token_counts)):
-                file.write(str(vocab_index) + '\t' + vocab_token + '\t' + str(count) + '\n')
+        vocabulary_filepath = join(data_dir, f"vocabulary-{self.mode}.txt")
+        with open(vocabulary_filepath, "w") as file:
+            for vocab_index, (vocab_token, count) in enumerate(
+                zip(self.vocab_tokens, self.token_counts)
+            ):
+                file.write(str(vocab_index) + "\t" + vocab_token + "\t" + str(count) + "\n")
 
     @classmethod
-    def load(cls, data_dir, mode='shared', vocabulary_size=None):
-        vocabulary_filepath = join(data_dir, f'vocabulary-{mode}.txt')
+    def load(cls, data_dir, mode="shared", vocabulary_size=None):
+        vocabulary_filepath = join(data_dir, f"vocabulary-{mode}.txt")
 
         vocab_tokens = {}
         token_counts = []
         with open(vocabulary_filepath) as file:
             for line in file:
-                vocab_index, vocab_token, count = line.strip().split('\t')
+                vocab_index, vocab_token, count = line.strip().split("\t")
                 vocab_index = int(vocab_index)
                 vocab_tokens[vocab_index] = vocab_token
                 token_counts.append(int(count))
@@ -92,4 +95,3 @@ class IndexDictionary:
         instance.vocabulary_size = len(vocab_tokens)
 
         return instance
-

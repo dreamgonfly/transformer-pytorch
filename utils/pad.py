@@ -15,7 +15,7 @@ def pad_masking(x, target_len):
 def subsequent_masking(x):
     # x: (batch_size, seq_len - 1)
     batch_size, seq_len = x.size()
-    subsequent_mask = np.triu(np.ones(shape=(seq_len, seq_len)), k=1).astype('uint8')
+    subsequent_mask = np.triu(np.ones(shape=(seq_len, seq_len)), k=1).astype("uint8")
     subsequent_mask = torch.tensor(subsequent_mask).to(x.device)
     subsequent_mask = subsequent_mask.unsqueeze(0).expand(batch_size, seq_len, seq_len)
     return subsequent_mask
