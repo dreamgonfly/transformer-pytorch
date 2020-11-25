@@ -1,5 +1,7 @@
-checkpoints/
-logs/
+/data
+/results
+/benchmarks
+/analyses
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -106,4 +108,11 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-\.idea/
+# Pycharm project settings
+.idea/
+
+# VS Code project settings
+.vscode/
+
+# Mac
+.DS_Store
