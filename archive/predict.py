@@ -1,7 +1,7 @@
 from predictors import Predictor
 from models import build_model
 from datasets import IndexedInputTargetTranslationDataset
-from dictionaries import IndexDictionary
+from archive.dictionaries import IndexDictionary
 
 from argparse import ArgumentParser
 import json

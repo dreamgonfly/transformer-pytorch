@@ -1,9 +1,9 @@
 from models import build_model
 from datasets import IndexedInputTargetTranslationDataset
-from dictionaries import IndexDictionary
+from archive.dictionaries import IndexDictionary
 from losses import TokenCrossEntropyLoss, LabelSmoothingLoss
-from metrics import AccuracyMetric
-from optimizers import NoamOptimizer
+from archive.metrics import AccuracyMetric
+from archive.optimizers import NoamOptimizer
 from trainer import EpochSeq2SeqTrainer
 from utils.log import get_logger
 from utils.pipe import input_target_collate_fn

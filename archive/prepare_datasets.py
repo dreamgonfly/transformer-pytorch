@@ -1,14 +1,10 @@
 from datasets import TranslationDataset, TranslationDatasetOnTheFly
-from datasets import TokenizedTranslationDataset, TokenizedTranslationDatasetOnTheFly
-from datasets import (
-    InputTargetTranslationDataset,
-    InputTargetTranslationDatasetOnTheFly,
-)
+from datasets import TokenizedTranslationDataset
 from datasets import (
     IndexedInputTargetTranslationDataset,
     IndexedInputTargetTranslationDatasetOnTheFly,
 )
-from dictionaries import IndexDictionary
+from archive.dictionaries import IndexDictionary
 from utils.pipe import (
     shared_tokens_generator,
     source_tokens_generator,

@@ -1,6 +1,6 @@
 from os.path import dirname, abspath, join, exists
 from os import makedirs
-from dictionaries import START_TOKEN, END_TOKEN
+from archive.dictionaries import START_TOKEN, END_TOKEN
 
 UNK_INDEX = 1
 
