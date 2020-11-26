@@ -1,9 +1,34 @@
 # Transformer-pytorch
-A PyTorch implementation of Transformer in "Attention is All You Need" (https://arxiv.org/abs/1706.03762)
+A PyTorch implementation of Transformer from "Attention is All You Need" (https://arxiv.org/abs/1706.03762).
 
 This repo focuses on clean, readable, and modular implementation of the paper.
 
 <img width="559" alt="screen shot 2018-09-27 at 1 49 14 pm" src="https://user-images.githubusercontent.com/2340721/46123973-44b08900-c25c-11e8-9468-7aef9e4e3f18.png">
+
+```commandline
+$ docker build --tag transformer --rm .
+$ docker run --name $CONTAINER_NAME -it --gpus all --shm-size 16G --volume $(pwd):/transformer transformer bash
+```
+
+```commandline
+python main.py v1 prepare multi30k data/Multi30k/
+```
+
+```commandline
+python -m spacy download en
+python -m spacy download de
+
+```
+
+```commandline
+python main.py v1 build-vocab data/Multi30k/train.json results/vocabs/shared_vocab.tsv --source-language de --target-language en --min-freq 2
+```
+9520 tokens. 9521 -1. maybe without \t or double quote?
+
+```commandline
+CUDA_VISIBLE_DEVICES=0 python main.py v1 train data/Multi30k/train.json data/Multi30k/val.json results/vocabs/shared_vocab.tsv results/vocabs/shared_vocab.tsv results/runs playground
+```
+
 
 ## Requirements
 - Python 3.6+

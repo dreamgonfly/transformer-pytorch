@@ -1,0 +1,20 @@
+Dockerfile
+
+# Documentation
+README.md
+
+# IDE
+.idea/
+.vs_code
+
+# VCS
+.git
+.gitignore
+
+# Cache
+__pycache__
+.cache
+
+# Etc.
+.ipynb_checkpoints
+.DS_Store
