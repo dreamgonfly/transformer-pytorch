@@ -19,7 +19,7 @@ class TransformerDecoder(nn.Module):
     ):
         super(TransformerDecoder, self).__init__()
 
-        self.layer_norm = nn.LayerNorm(normalized_shape=d_model)
+        self.layer_norm = nn.LayerNorm(d_model, eps=1e-6)
         self.layers = nn.ModuleList(
             [
                 TransformerDecoderLayer(d_model, d_ff, n_heads, dropout, use_memory)

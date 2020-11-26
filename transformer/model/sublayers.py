@@ -14,7 +14,7 @@ class MultiHeadAttentionSublayer(nn.Module):
 
         self.attention = MultiHeadAttention(d_model, n_heads, dropout, mode)
         self.dropout = nn.Dropout(dropout)
-        self.layer_norm = nn.LayerNorm(normalized_shape=d_model)
+        self.layer_norm = nn.LayerNorm(d_model, eps=1e-6)
 
     def forward(
         self,
@@ -38,7 +38,7 @@ class PositionWiseFeedForwardSublayer(nn.Module):
 
         self.feed_forward = PositionWiseFeedForwardNetwork(d_model, d_ff)
         self.dropout = nn.Dropout(dropout)
-        self.layer_norm = nn.LayerNorm(normalized_shape=d_model)
+        self.layer_norm = nn.LayerNorm(d_model, eps=1e-6)
 
     def forward(self, inputs: Tensor) -> Tensor:
         x = self.feed_forward(inputs)
