@@ -54,7 +54,7 @@ def train(
         dropout=0.1,
     )
 
-    optimizer = Adam(model.parameters(), lr=1.0, betas=(0.9, 0.98), eps=1e-09)
+    optimizer = Adam(model.parameters(), lr=2.0, betas=(0.9, 0.98), eps=1e-09)
     lr_factor_scheduler = NoamLRScheduler(d_model=512, wamrup_steps=128000)
     lr_scheduler = LambdaLR(optimizer, lr_factor_scheduler.get_factor)
 
