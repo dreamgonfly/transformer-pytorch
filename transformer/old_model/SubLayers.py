@@ -1,4 +1,5 @@
 """ Define the sublayers in encoder/decoder layer """
+import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 from .Modules import ScaledDotProductAttention
@@ -27,6 +28,7 @@ class MultiHeadAttention(nn.Module):
         self.layer_norm = nn.LayerNorm(d_model, eps=1e-6)
 
     def forward(self, q, k, v, mask=None):
+
         d_k, d_v, n_head = self.d_k, self.d_v, self.n_head
         sz_b, len_q, len_k, len_v = q.size(0), q.size(1), k.size(1), v.size(1)
 

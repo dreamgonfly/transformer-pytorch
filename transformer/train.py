@@ -7,7 +7,7 @@ from typer import Option
 
 from transformer.data_feeder import DataFeeder
 from transformer.lr_schedulers.noam_lr_scheduler import NoamLRScheduler
-from transformer.model.Models import Transformer
+from transformer.old_model.Models import Transformer
 from transformer.model_runner import ModelRunner
 from transformer.training.checkpointers.checkpointer import MonitorMode
 from transformer.training.checkpointers.model_checkpointer import ModelCheckpointer
