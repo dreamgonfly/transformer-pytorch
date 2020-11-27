@@ -7,8 +7,8 @@ from typer import Option
 
 from transformer.data_feeder import DataFeeder
 from transformer.lr_schedulers.noam_lr_scheduler import NoamLRScheduler
-from transformer.model.transformer import Transformer
 from transformer.model_runner import ModelRunner
+from transformer.old_model.Models import Transformer
 from transformer.training.checkpointers.checkpointer import MonitorMode
 from transformer.training.checkpointers.model_checkpointer import ModelCheckpointer
 from transformer.training.loggers.file_logger import FileLogger
@@ -40,15 +40,18 @@ def train(
     model = Transformer(
         data_feeder.source_token_indexer.num_tokens(),
         data_feeder.target_token_indexer.num_tokens(),
-        pad_token_index=0,
+        src_pad_idx=0,
+        trg_pad_idx=0,
+        trg_emb_prj_weight_sharing=True,
+        emb_src_trg_weight_sharing=True,
+        d_k=64,
+        d_v=64,
         d_model=512,
-        d_ff=2048,
-        num_layers=6,
-        n_heads=8,
+        d_word_vec=512,
+        d_inner=2048,
+        n_layers=6,
+        n_head=8,
         dropout=0.1,
-        num_positions=200,
-        input_target_weight_sharing=True,
-        source_target_weight_sharing=True,
     )
 
     optimizer = Adam(model.parameters(), lr=2.0, betas=(0.9, 0.98), eps=1e-09)
