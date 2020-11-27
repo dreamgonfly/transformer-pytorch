@@ -29,6 +29,9 @@ python main.py v1 build-vocab data/Multi30k/train.json results/vocabs/shared_voc
 CUDA_VISIBLE_DEVICES=0 python main.py v1 train data/Multi30k/train.json data/Multi30k/val.json results/vocabs/shared_vocab.tsv results/vocabs/shared_vocab.tsv results/runs playground
 ```
 
+```commandline
+python main.py v1 prepare aihub data/AIHub/
+```
 
 ## Requirements
 - Python 3.6+
