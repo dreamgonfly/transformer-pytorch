@@ -21,10 +21,10 @@ class MultiHeadAttention(nn.Module):
 
         self.d_head = d_model // n_heads
         self.n_heads = n_heads
-        self.query_projection = nn.Linear(d_model, n_heads * self.d_head)
-        self.key_projection = nn.Linear(d_model, n_heads * self.d_head)
-        self.value_projection = nn.Linear(d_model, n_heads * self.d_head)
-        self.final_projection = nn.Linear(n_heads * self.d_head, d_model)
+        self.query_projection = nn.Linear(d_model, n_heads * self.d_head, bias=False)
+        self.key_projection = nn.Linear(d_model, n_heads * self.d_head, bias=False)
+        self.value_projection = nn.Linear(d_model, n_heads * self.d_head, bias=False)
+        self.final_projection = nn.Linear(n_heads * self.d_head, d_model, bias=False)
         self.attention = ScaledDotProductAttention(temperature=np.sqrt(self.d_head))
         self.attention_dropout = nn.Dropout(dropout)
 
