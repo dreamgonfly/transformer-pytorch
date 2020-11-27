@@ -71,7 +71,7 @@ def build_vocab(
         index_to_token_name[next_index] = token_name
 
     for token, count in source_counter.most_common(None):
-        if count <= min_freq:
+        if count < min_freq:
             continue
         next_index = len(token_to_index)
         token_to_index[token] = next_index
@@ -79,7 +79,7 @@ def build_vocab(
     for token, count in target_counter.most_common(None):
         if token in token_to_index:
             continue
-        if count <= min_freq:
+        if count < min_freq:
             continue
         next_index = len(token_to_index)
         token_to_index[token] = next_index

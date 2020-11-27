@@ -20,10 +20,10 @@ class TranslationDataset(Dataset):
         data = []
         for pair in data_list.pairs:
             source_indices = source_token_indexer.encode_sentence(
-                pair.source.strip('"').replace("\t", "")
+                pair.source.strip('"').replace("\t", "").lower()
             )
             target_indices = target_token_indexer.encode_sentence(
-                pair.target.strip('"').replace("\t", "")
+                pair.target.strip('"').replace("\t", "").lower()
             )
             if len(source_indices) > max_length:
                 continue

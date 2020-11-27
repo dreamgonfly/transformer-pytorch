@@ -21,7 +21,7 @@ python -m spacy download de
 ```
 
 ```commandline
-python main.py v1 build-vocab data/Multi30k/train.json results/vocabs/shared_vocab.tsv --source-language de --target-language en --min-freq 2
+python main.py v1 build-vocab data/Multi30k/train.json results/vocabs/shared_vocab.tsv --source-language de --target-language en --min-freq 3
 ```
 9520 tokens. 9521 -1. maybe without \t or double quote?
 
