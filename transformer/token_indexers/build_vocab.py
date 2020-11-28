@@ -24,30 +24,23 @@ def build_vocab(
     min_freq: int = Option(1),
 ):
     data_list = TranslationDataList.load(data_list_path)
-    source_tokenizer = create_tokenizer(tokenizer_name, source_language)
-    target_tokenizer = create_tokenizer(tokenizer_name, target_language)
+    source_tokenizer = create_tokenizer(tokenizer_name, source_language, lower=True)
+    target_tokenizer = create_tokenizer(tokenizer_name, target_language, lower=True)
 
     source_counter = Counter()
     target_counter = Counter()
 
     for data_pair in data_list.pairs:
-        text = data_pair.source
-
         # Normalize
-        text = text.strip('"').replace("\t", "").lower()
-        tokens = source_tokenizer.tokenize(text)
-        if len(tokens) > 100:
+        # text = text.strip('"').replace("\t", "").lower()
+        if data_pair.source == "" or data_pair.target == "":
+            raise ValueError
+        source_tokens = source_tokenizer.tokenize(data_pair.source)
+        target_tokens = target_tokenizer.tokenize(data_pair.target)
+        if len(source_tokens) > 100 or len(target_tokens) > 100:
             continue
-        source_counter.update(tokens)
-
-        text = data_pair.target
-
-        # Normalize
-        text = text.strip('"').replace("\t", "").lower()
-        tokens = target_tokenizer.tokenize(text)
-        if len(tokens) > 100:
-            continue
-        target_counter.update(tokens)
+        source_counter.update(source_tokens)
+        target_counter.update(target_tokens)
 
     token_names = [
         (PAD_TOKEN_NAME, "[PAD]"),

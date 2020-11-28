@@ -13,8 +13,8 @@ class Language(str, Enum):
     DE = "de"
 
 
-def create_tokenizer(name: TokenizerName, language: Language) -> Tokenizer:
+def create_tokenizer(name: TokenizerName, language: Language, lower: bool) -> Tokenizer:
     if name == TokenizerName.SPACY:
-        return SpacyTokenizer(language.value)
+        return SpacyTokenizer(language.value, lower)
     else:
         raise NotImplementedError

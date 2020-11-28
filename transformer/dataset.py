@@ -19,15 +19,9 @@ class TranslationDataset(Dataset):
     ):
         data = []
         for pair in data_list.pairs:
-            source_indices = source_token_indexer.encode_sentence(
-                pair.source.strip('"').replace("\t", "").lower()
-            )
-            target_indices = target_token_indexer.encode_sentence(
-                pair.target.strip('"').replace("\t", "").lower()
-            )
-            if len(source_indices) > max_length:
-                continue
-            if len(target_indices) > max_length:
+            source_indices = source_token_indexer.encode_sentence(pair.source)
+            target_indices = target_token_indexer.encode_sentence(pair.target)
+            if len(source_indices) > max_length or len(target_indices) > max_length:
                 continue
             data.append((source_indices, target_indices))
 

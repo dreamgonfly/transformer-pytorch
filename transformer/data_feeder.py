@@ -25,8 +25,8 @@ class DataFeeder(Feeder):
         target_vocab_path: Path,
         batch_size,
     ):
-        source_tokenizer = create_tokenizer(TokenizerName("spacy"), Language("de"))
-        target_tokenizer = create_tokenizer(TokenizerName("spacy"), Language("en"))
+        source_tokenizer = create_tokenizer(TokenizerName("spacy"), Language("de"), lower=True)
+        target_tokenizer = create_tokenizer(TokenizerName("spacy"), Language("en"), lower=True)
 
         self.source_token_indexer = VocabularyIndexer.load(source_vocab_path, source_tokenizer)
         self.target_token_indexer = VocabularyIndexer.load(target_vocab_path, target_tokenizer)
