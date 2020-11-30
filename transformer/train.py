@@ -16,7 +16,7 @@ from transformer.training.checkpointers.model_checkpointer import ModelCheckpoin
 from transformer.training.loggers.file_logger import FileLogger
 from transformer.training.progress_bar import ProgressBar
 from transformer.training.trainer import Trainer
-from transformer.training.utils import find_next_version_dir
+from transformer.training.utils import find_next_version_dir, seed
 
 
 def train(
@@ -27,6 +27,7 @@ def train(
     runs_dir: Path,
     run_name: str,
 ):
+    seed(0)
 
     data_feeder = DataFeeder(train_path, val_path, source_vocab_path, target_vocab_path, 256)
     model_runner = ModelRunner()
