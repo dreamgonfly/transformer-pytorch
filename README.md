@@ -23,7 +23,7 @@ python -m spacy download de
 ```commandline
 python main.py v1 build-vocab data/Multi30k/train.json results/vocabs/shared_vocab.tsv --source-language de --target-language en --min-freq 3
 ```
-9520 tokens. 9521 -1. maybe without \t or double quote?
+Vocabulary 9521 lines written to results/vocabs/shared_vocab.tsv
 
 ```commandline
 CUDA_VISIBLE_DEVICES=0 python main.py v1 train data/Multi30k/train.json data/Multi30k/val.json results/vocabs/shared_vocab.tsv results/vocabs/shared_vocab.tsv results/runs playground
