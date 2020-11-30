@@ -82,6 +82,8 @@ class MultiHeadAttention(nn.Module):
         value_heads = value_projected.view(batch_size, value_len, n_heads, d_head).transpose(1, 2)
         # value_heads: (batch_size, n_heads, value_len, d_head)
 
+        if mask is not None:
+            mask = mask.unsqueeze(1)
         attention = self.attention(query_heads, key_heads, mask)
         # attention: (batch_size, n_heads, query_len, key_len)
         attention_dropped = self.attention_dropout(attention)
@@ -94,6 +96,6 @@ class MultiHeadAttention(nn.Module):
         # (batch_size, query_len, d_model)
         final_output = self.final_projection(context)
 
-        # state.attention = attention
+        state.attention = attention
 
         return final_output, state

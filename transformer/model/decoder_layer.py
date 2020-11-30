@@ -45,6 +45,6 @@ class TransformerDecoderLayer(nn.Module):
             memory_attention_state = AttentionState()
         x = self.feed_forward(x)
 
-        # state.self_attention = self_attention_state
-        # state.memory_attention = memory_attention_state
+        state.self_attention = self_attention_state
+        state.memory_attention = memory_attention_state
         return x, state

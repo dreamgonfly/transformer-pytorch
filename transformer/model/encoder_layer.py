@@ -20,5 +20,5 @@ class TransformerEncoderLayer(nn.Module):
         x, self_attention_state = self.self_attention(x, x, x, mask, state, cache=False)
         x = self.feed_forward(x)
 
-        # state.self_attention = self_attention_state
+        state.self_attention = self_attention_state
         return x, state

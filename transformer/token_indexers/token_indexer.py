@@ -14,3 +14,7 @@ class TokenIndexer(ABC):
     @abstractmethod
     def num_tokens(self) -> int:
         pass
+
+    @abstractmethod
+    def encode_token_name(self, token_name: str) -> int:
+        pass

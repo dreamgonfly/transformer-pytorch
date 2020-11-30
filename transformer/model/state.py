@@ -91,31 +91,3 @@ class DecoderState(dict):
     @classmethod
     def merge(cls, states: List[DecoderState]):
         pass
-
-
-# class LayerCache(dict):
-#     @property
-#     def self(self) -> AttentionCache:
-#         return self[CacheMode.SELF.value]
-#
-#     @property
-#     def memory(self) -> AttentionCache:
-#         return self[CacheMode.MEMORY.value]
-#
-#     @classmethod
-#     def new(cls, self_attention_cache: AttentionCache, memory_attention_cache: AttentionCache):
-#         return cls(self=self_attention_cache, memory=memory_attention_cache)
-#
-#
-# class Cache(dict):
-#     def select_layer(self, layer_index: int) -> LayerCache:
-#         return self.get(layer_index)
-#
-#     def set_layer(self, layer_index: int, layer_cache: LayerCache) -> None:
-#         self[layer_index] = layer_cache
-#
-#
-# class LayerAttention(dict):
-#     @classmethod
-#     def new(cls, self_attention: Tensor, memory_attention: Tensor):
-#         return cls(self=self_attention, memory=memory_attention)

@@ -3,14 +3,14 @@ from pathlib import Path
 
 from torch.optim import Adam
 from torch.optim.lr_scheduler import LambdaLR
-from typer import Option
 
 from transformer.data_feeder import DataFeeder
 from transformer.lr_schedulers.noam_lr_scheduler import NoamLRScheduler
 
-# from transformer.model.transformer import Transformer
-from transformer.old_model.Models import Transformer
+from transformer.model.transformer import Transformer
+
 from transformer.model_runner import ModelRunner
+from transformer.token_indexers.vocabulary_indexer import PAD_TOKEN_NAME
 from transformer.training.checkpointers.checkpointer import MonitorMode
 from transformer.training.checkpointers.model_checkpointer import ModelCheckpointer
 from transformer.training.loggers.file_logger import FileLogger
@@ -24,57 +24,38 @@ def train(
     val_path: Path,
     source_vocab_path: Path,
     target_vocab_path: Path,
-    runs_dir: Path,
     run_name: str,
+    runs_dir: Path = "results/runs",
+    num_layers: int = 6,
+    epochs: int = 400,
+    batch_size: int = 256,
+    warmup_steps: int = 128000,
 ):
     seed(0)
 
-    data_feeder = DataFeeder(train_path, val_path, source_vocab_path, target_vocab_path, 256)
-    model_runner = ModelRunner()
+    data_feeder = DataFeeder(
+        train_path, val_path, source_vocab_path, target_vocab_path, batch_size, max_length=100
+    )
+    pad_token_index = data_feeder.source_token_indexer.encode_token_name(PAD_TOKEN_NAME)
 
-    print(
-        "data_feeder.source_token_indexer.num_tokens()",
-        data_feeder.source_token_indexer.num_tokens(),
-    )
-    print(
-        "data_feeder.target_token_indexer.num_tokens()",
-        data_feeder.target_token_indexer.num_tokens(),
-    )
-    # model = Transformer(
-    #     data_feeder.source_token_indexer.num_tokens(),
-    #     data_feeder.target_token_indexer.num_tokens(),
-    #     pad_token_index=0,
-    #     d_model=512,
-    #     d_ff=2048,
-    #     num_layers=6,
-    #     n_heads=8,
-    #     dropout=0.1,
-    #     num_positions=200,
-    #     input_target_weight_sharing=True,
-    #     source_target_weight_sharing=True,
-    # )
+    model_runner = ModelRunner(pad_token_index=pad_token_index)
 
     model = Transformer(
         data_feeder.source_token_indexer.num_tokens(),
         data_feeder.target_token_indexer.num_tokens(),
-        src_pad_idx=0,
-        trg_pad_idx=0,
-        trg_emb_prj_weight_sharing=True,
-        emb_src_trg_weight_sharing=True,
-        d_k=64,
-        d_v=64,
+        pad_token_index=pad_token_index,
         d_model=512,
-        d_word_vec=512,
-        d_inner=2048,
-        n_layers=6,
-        n_head=8,
+        d_ff=2048,
+        num_layers=num_layers,
+        n_heads=8,
         dropout=0.1,
+        num_positions=200,
+        input_target_weight_sharing=True,
+        source_target_weight_sharing=True,
     )
 
-    print(sum(p.numel() for p in model.parameters() if p.requires_grad))
-
-    optimizer = Adam(model.parameters(), lr=2.0, betas=(0.9, 0.98), eps=1e-09)
-    lr_factor_scheduler = NoamLRScheduler(d_model=512, wamrup_steps=128000)
+    optimizer = Adam(model.parameters(), lr=1.0, betas=(0.9, 0.98), eps=1e-09)
+    lr_factor_scheduler = NoamLRScheduler(factor=2.0, d_model=512, wamrup_steps=warmup_steps)
     lr_scheduler = LambdaLR(optimizer, lr_factor_scheduler.get_factor)
 
     version_dir = find_next_version_dir(runs_dir=runs_dir, run_name=run_name)
@@ -107,8 +88,7 @@ def train(
         progress_bar=progress_bar,
         gradient_accumulation_steps=1,
         gradient_clip_val=None,
-        epochs=400,
-        # steps=config.steps,
+        epochs=epochs,
         num_sanity_check_steps=3,
         device=torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"),
         use_amp=False,

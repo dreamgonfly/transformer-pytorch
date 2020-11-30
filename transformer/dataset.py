@@ -7,8 +7,10 @@ from transformer.token_indexers.token_indexer import TokenIndexer
 
 
 class TranslationDataset(Dataset):
-    variable_length_fields = {"source_token_indices", "target_token_indices"}
+    variable_length_fields = {"source_token_indices", "input_token_indices", "target_token_indices"}
     data: List[Tuple[List[int], List[int]]]
+    start_token_index: int
+    end_token_index: int
 
     def __init__(
         self,
@@ -16,6 +18,8 @@ class TranslationDataset(Dataset):
         source_token_indexer: TokenIndexer,
         target_token_indexer: TokenIndexer,
         max_length: int,
+        start_token_index: int,
+        end_token_index: int,
     ):
         data = []
         for pair in data_list.pairs:
@@ -26,13 +30,23 @@ class TranslationDataset(Dataset):
             data.append((source_indices, target_indices))
 
         self.data = data
+        self.start_token_index = start_token_index
+        self.end_token_index = end_token_index
 
     def __getitem__(self, item):
         source_indices, target_indices = self.data[item]
-        source_indices = [2] + source_indices + [3]
-        target_indices = [2] + target_indices + [3]
-        inputs = {"source_token_indices": source_indices, "length": len(source_indices)}
-        targets = {"target_token_indices": target_indices, "length": len(target_indices)}
+        input_token_indices = [self.start_token_index] + target_indices
+        target_token_indices = target_indices + [self.end_token_index]
+        inputs = {
+            "source_token_indices": source_indices,
+            "source_length": len(source_indices),
+            "input_token_indices": input_token_indices,
+            "input_length": len(input_token_indices),
+        }
+        targets = {
+            "target_token_indices": target_token_indices,
+            "length": len(target_token_indices),
+        }
         return inputs, targets
 
     def __len__(self):

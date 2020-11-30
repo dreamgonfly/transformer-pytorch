@@ -1,11 +1,14 @@
 from torch import Tensor
 from torch import nn
+from torch.nn.utils.rnn import (
+    PackedSequence,
+    pad_packed_sequence,
+    pack_padded_sequence,
+)
 
 from transformer.model.decoder import TransformerDecoder
 from transformer.model.encoder import TransformerEncoder
-from transformer.model.masking import get_pad_mask, get_subsequent_mask
 from transformer.model.positional_encoding import PositionalEncoding
-from transformer.model.state import EncoderState
 
 
 class Transformer(nn.Module):
@@ -25,50 +28,55 @@ class Transformer(nn.Module):
     ):
         super().__init__()
 
-        self.sources_embedding = nn.Embedding(
-            source_vocab_size, d_model, padding_idx=pad_token_index
+        self.sources_embedding = nn.Sequential(
+            nn.Embedding(source_vocab_size, d_model, padding_idx=pad_token_index),
+            PositionalEncoding(d_model, n_position=num_positions),
+            nn.Dropout(p=dropout),
         )
-        self.sources_position_enc = PositionalEncoding(d_model, n_position=num_positions)
-        self.sources_dropout = nn.Dropout(p=dropout)
         self.encoder = TransformerEncoder(num_layers, d_model, d_ff, n_heads, dropout)
 
-        self.inputs_embedding = nn.Embedding(
-            target_vocab_size, d_model, padding_idx=pad_token_index
+        self.inputs_embedding = nn.Sequential(
+            nn.Embedding(target_vocab_size, d_model, padding_idx=pad_token_index),
+            PositionalEncoding(d_model, n_position=num_positions),
+            nn.Dropout(p=dropout),
         )
-        self.inputs_position_enc = PositionalEncoding(d_model, n_position=num_positions)
-        self.inputs_dropout = nn.Dropout(p=dropout)
         use_memory = True
         self.decoder = TransformerDecoder(num_layers, d_model, d_ff, n_heads, dropout, use_memory)
 
-        self.generator = nn.Linear(d_model, target_vocab_size, bias=False)
+        self.target_projection = nn.Linear(d_model, target_vocab_size, bias=False)
+        self.log_softmax = nn.LogSoftmax(dim=2)
 
         for p in self.parameters():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
 
-        self.x_logit_scale = 1.0
+        self.logit_scale = 1.0
         if input_target_weight_sharing:
-            self.generator.weight = self.inputs_embedding.weight
-            self.x_logit_scale = d_model ** -0.5
+            self.target_projection.weight = self.inputs_embedding[0].weight
+            self.logit_scale = d_model ** -0.5
 
         if source_target_weight_sharing:
-            self.sources_embedding.weight = self.inputs_embedding.weight
+            self.sources_embedding[0].weight = self.inputs_embedding[0].weight
 
         self.pad_token_index = pad_token_index
 
-    def forward(self, sources: Tensor, inputs: Tensor) -> Tensor:
-        sources_mask = get_pad_mask(sources, self.pad_token_index) == 0
-        inputs_mask = (
-            get_pad_mask(inputs, self.pad_token_index) & get_subsequent_mask(inputs)
-        ) == 0
-
-        sources = self.sources_dropout(self.sources_position_enc(self.sources_embedding(sources)))
-        memories, _ = self.encoder(sources, sources_mask, state=None)
-
-        inputs = self.inputs_dropout(self.inputs_position_enc(self.inputs_embedding(inputs)))
-        outputs, _ = self.decoder(
-            inputs, memories, inputs_mask, sources_mask, state=None, cache=False
+    def forward(self, sources: PackedSequence, inputs: PackedSequence) -> Tensor:
+        sources_sequence, source_lengths = pad_packed_sequence(
+            sources, batch_first=True, padding_value=self.pad_token_index
         )
-        logits = self.generator(outputs) * self.x_logit_scale
+        sources = self.sources_embedding(sources_sequence)
+        sources = pack_padded_sequence(
+            sources, source_lengths, batch_first=True, enforce_sorted=False
+        )
+        memories, _ = self.encoder(sources, state=None)
 
-        return logits.view(-1, logits.size(2))
+        inputs_sequence, input_lengths = pad_packed_sequence(
+            inputs, batch_first=True, padding_value=self.pad_token_index
+        )
+        inputs = self.inputs_embedding(inputs_sequence)
+        inputs = pack_padded_sequence(inputs, input_lengths, batch_first=True, enforce_sorted=False)
+        outputs, _ = self.decoder(inputs, memories, state=None, cache=False)
+        logits = self.target_projection(outputs) * self.logit_scale
+        log_probs = self.log_softmax(logits)
+
+        return log_probs

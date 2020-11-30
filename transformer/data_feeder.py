@@ -23,7 +23,8 @@ class DataFeeder(Feeder):
         val_path: Path,
         source_vocab_path: Path,
         target_vocab_path: Path,
-        batch_size,
+        batch_size: int,
+        max_length: int,
     ):
         source_tokenizer = create_tokenizer(TokenizerName("spacy"), Language("de"), lower=True)
         target_tokenizer = create_tokenizer(TokenizerName("spacy"), Language("en"), lower=True)
@@ -35,10 +36,20 @@ class DataFeeder(Feeder):
         val_data_list = TranslationDataList.load(val_path)
 
         train_dataset = TranslationDataset(
-            train_data_list, self.source_token_indexer, self.target_token_indexer, 100
+            train_data_list,
+            self.source_token_indexer,
+            self.target_token_indexer,
+            max_length,
+            start_token_index=2,
+            end_token_index=3,
         )
         val_dataset = TranslationDataset(
-            val_data_list, self.source_token_indexer, self.target_token_indexer, 100
+            val_data_list,
+            self.source_token_indexer,
+            self.target_token_indexer,
+            max_length,
+            start_token_index=2,
+            end_token_index=3,
         )
 
         self.train_dataloader = DataLoader(

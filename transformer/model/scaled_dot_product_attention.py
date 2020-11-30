@@ -25,7 +25,6 @@ class ScaledDotProductAttention(nn.Module):
         # scores: (batch_size, n_heads, query_len, key_len)
 
         if mask is not None:
-            mask = mask.unsqueeze(1)  # For head axis broadcasting.
             scores = scores.masked_fill(mask, -1e9)
 
         tempered_scores = scores / self.temperature

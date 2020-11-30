@@ -1,9 +1,11 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 from torch import Tensor
 from torch import nn
+from torch.nn.utils.rnn import PackedSequence, pad_packed_sequence
 
 from transformer.model.decoder_layer import TransformerDecoderLayer
+from transformer.model.masking import mask_from_lengths, mask_from_subsequent_positions
 from transformer.model.state import DecoderState
 
 
@@ -29,25 +31,33 @@ class TransformerDecoder(nn.Module):
 
     def forward(
         self,
-        inputs: Tensor,
-        memories: Optional[Tensor],
-        self_attention_mask: Optional[Tensor],
-        memory_attention_mask: Optional[Tensor],
+        inputs: PackedSequence,
+        memories: Optional[PackedSequence],
         state: Optional[DecoderState],
         cache: bool,
-    ):
+    ) -> Tuple[Tensor, DecoderState]:
         # inputs: (batch_size, input_length, d_model)
         # memory: (batch_size, memory_length, d_model)
+
+        x, input_lengths = pad_packed_sequence(inputs, batch_first=True)
+        memories, memory_lengths = pad_packed_sequence(memories, batch_first=True)
+
+        input_length_mask = mask_from_lengths(input_lengths).unsqueeze(1)
+        input_subsequent_mask = mask_from_subsequent_positions(input_lengths.max())
+        self_attention_mask = input_length_mask & input_subsequent_mask
+        self_attention_mask = self_attention_mask.to(device=x.device)
+
+        memory_attention_mask = mask_from_lengths(memory_lengths).unsqueeze(1).to(device=x.device)
 
         if state is None:
             state = DecoderState()
 
-        x = self.layer_norm(inputs)
+        x = self.layer_norm(x)
         for layer_index, layer in enumerate(self.layers):
             layer_state = state.select_layer(layer_index)
             x, layer_state = layer(
                 x, memories, self_attention_mask, memory_attention_mask, layer_state, cache
             )
 
-            # state.set_layer(layer_index, layer_state)
+            state.set_layer(layer_index, layer_state)
         return x, state
