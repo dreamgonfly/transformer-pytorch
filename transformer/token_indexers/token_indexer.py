@@ -12,6 +12,10 @@ class TokenIndexer(ABC):
         pass
 
     @abstractmethod
+    def decode_indices_clean(self, indices: List[int]) -> str:
+        pass
+
+    @abstractmethod
     def num_tokens(self) -> int:
         pass
 

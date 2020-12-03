@@ -5,6 +5,7 @@ import typer
 from transformer.prepare.cli import app as prepare_app
 from transformer.token_indexers.build_vocab import build_vocab
 from transformer.train import train
+from transformer.predict import translate
 
 app = typer.Typer()
 
@@ -14,6 +15,7 @@ app.add_typer(v1_app, name="v1")
 v1_app.add_typer(prepare_app, name="prepare")
 v1_app.command()(build_vocab)
 v1_app.command()(train)
+v1_app.command()(translate)
 
 
 if __name__ == "__main__":

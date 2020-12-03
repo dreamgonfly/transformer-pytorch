@@ -70,9 +70,13 @@ def train(
         top_k=1,
         save_last=True,
         period=1,
-        name_format=name_prefix + "epoch-{epoch:0>3}-val-cer-{val_loss:.5f}.checkpoint",
+        name_format=name_prefix + "epoch-{epoch:0>3}-val-ppl-{val_ppl:.5f}.checkpoint",
         save_weights_only=True,
-        config={},
+        config={
+            "source_vocab_path": str(source_vocab_path),
+            "target_vocab_path": str(target_vocab_path),
+            "num_layers": num_layers,
+        },
     )
 
     progress_bar = ProgressBar(

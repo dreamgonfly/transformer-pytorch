@@ -41,6 +41,16 @@ class VocabularyIndexer(TokenIndexer):
         sentence = self.tokenizer.detokenize(tokens)
         return sentence
 
+    def decode_indices_clean(self, indices: List[int]) -> str:
+        pad_token_index = self.encode_token_name(PAD_TOKEN_NAME)
+        start_token_index = self.encode_token_name(SENTNECE_START_TOKEN_NAME)
+        end_token_index = self.encode_token_name(SENTNECE_END_TOKEN_NAME)
+        non_display_indices = [pad_token_index, start_token_index, end_token_index]
+        clean_indices = [index for index in indices if index not in non_display_indices]
+        clean_tokens = [self.decode_index(token_index) for token_index in clean_indices]
+        sentence = self.tokenizer.detokenize(clean_tokens)
+        return sentence
+
     def encode_token(self, token: str) -> int:
         return self.token_to_index.get(token, self.token_name_to_index[UNKNOWN_TOKEN_NAME])
 

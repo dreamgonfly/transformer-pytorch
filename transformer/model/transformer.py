@@ -1,3 +1,5 @@
+from typing import Tuple, Optional
+
 from torch import Tensor
 from torch import nn
 from torch.nn.utils.rnn import (
@@ -9,6 +11,7 @@ from torch.nn.utils.rnn import (
 from transformer.model.decoder import TransformerDecoder
 from transformer.model.encoder import TransformerEncoder
 from transformer.model.positional_encoding import PositionalEncoding
+from transformer.model.state import EncoderState, DecoderState
 
 
 class Transformer(nn.Module):
@@ -61,6 +64,11 @@ class Transformer(nn.Module):
         self.pad_token_index = pad_token_index
 
     def forward(self, sources: PackedSequence, inputs: PackedSequence) -> Tensor:
+        memories, _ = self.encode(sources)
+        log_probs, _ = self.decode(memories, inputs, state=None, cache=False)
+        return log_probs
+
+    def encode(self, sources: PackedSequence) -> Tuple[PackedSequence, EncoderState]:
         sources_sequence, source_lengths = pad_packed_sequence(
             sources, batch_first=True, padding_value=self.pad_token_index
         )
@@ -68,15 +76,22 @@ class Transformer(nn.Module):
         sources = pack_padded_sequence(
             sources, source_lengths, batch_first=True, enforce_sorted=False
         )
-        memories, _ = self.encoder(sources, state=None)
+        memories, state = self.encoder(sources, state=None)
+        return memories, state
 
+    def decode(
+        self,
+        memories: PackedSequence,
+        inputs: PackedSequence,
+        state: Optional[DecoderState],
+        cache: bool,
+    ) -> Tuple[Tensor, DecoderState]:
         inputs_sequence, input_lengths = pad_packed_sequence(
             inputs, batch_first=True, padding_value=self.pad_token_index
         )
         inputs = self.inputs_embedding(inputs_sequence)
         inputs = pack_padded_sequence(inputs, input_lengths, batch_first=True, enforce_sorted=False)
-        outputs, _ = self.decoder(inputs, memories, state=None, cache=False)
+        outputs, state = self.decoder(inputs, memories, state=state, cache=cache)
         logits = self.target_projection(outputs) * self.logit_scale
         log_probs = self.log_softmax(logits)
-
-        return log_probs
+        return log_probs, state
