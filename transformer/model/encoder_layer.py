@@ -17,7 +17,9 @@ class TransformerEncoderLayer(nn.Module):
     def forward(
         self, x: Tensor, mask: Optional[Tensor], state: LayerState
     ) -> Tuple[Tensor, LayerState]:
-        x, self_attention_state = self.self_attention(x, x, x, mask, state, cache=False)
+        x, self_attention_state = self.self_attention(
+            x, x, x, mask, state.self_attention, cache=False
+        )
         x = self.feed_forward(x)
 
         state.self_attention = self_attention_state

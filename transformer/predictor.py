@@ -34,7 +34,7 @@ class Translator:
         searcher: BeamSearcher,
         device: torch.device,
     ):
-        self.model = model
+        self.model = model.eval()
         self.source_token_indexer = source_token_indexer
         self.target_token_indexer = target_token_indexer
         self.searcher = searcher
