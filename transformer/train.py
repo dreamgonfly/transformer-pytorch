@@ -65,7 +65,7 @@ def train(
     name_prefix = f"{run_name.replace('/', '-')}-{version_dir.name}-"
     model_checkpoint = ModelCheckpointer(
         checkpoints_dir=version_dir.joinpath("checkpoints"),
-        monitor_metric="val_loss",
+        monitor_metric="val_ppl",
         mode=MonitorMode.MIN,
         top_k=1,
         save_last=True,

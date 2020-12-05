@@ -71,10 +71,11 @@ class BeamSearcher:
                 ended_indices, ended_hypotheses, parameters
             )
 
-            self._update_scorer_indices(running_indices)
             finished_hypotheses.extend(ended_hypotheses)
             if not running_hypotheses:
                 break
+
+            self._update_scorer_indices(running_indices)
 
         finished_hypotheses.extend(self._finalize_hypotheses(running_hypotheses))
         return finished_hypotheses
@@ -126,7 +127,9 @@ class BeamSearcher:
         return hypotheses
 
     def _update_scorer_indices(self, indices: List[int]) -> None:
-        indices_tensor = torch.tensor(indices, device=self.attention_scorer.device)
+        indices_tensor = torch.tensor(
+            indices, device=self.attention_scorer.device, dtype=torch.long
+        )
         self.attention_scorer.select_indices(indices_tensor)
 
     def _finalize_hypotheses(self, hypotheses: List[Hypothesis]) -> List[Hypothesis]:
