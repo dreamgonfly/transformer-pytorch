@@ -39,6 +39,9 @@ class TransformerDecoder(nn.Module):
         # inputs: (batch_size, input_length, d_model)
         # memory: (batch_size, memory_length, d_model)
 
+        if state is None:
+            state = DecoderState()
+
         x, input_lengths = pad_packed_sequence(inputs, batch_first=True)
         memories, memory_lengths = pad_packed_sequence(memories, batch_first=True)
 
@@ -48,9 +51,6 @@ class TransformerDecoder(nn.Module):
         self_attention_mask = self_attention_mask.to(device=x.device)
 
         memory_attention_mask = mask_from_lengths(memory_lengths).unsqueeze(1).to(device=x.device)
-
-        if state is None:
-            state = DecoderState()
 
         x = self.layer_norm(x)
         for layer_index, layer in enumerate(self.layers):
