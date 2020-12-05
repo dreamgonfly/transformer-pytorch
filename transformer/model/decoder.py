@@ -44,7 +44,7 @@ class TransformerDecoder(nn.Module):
 
         input_length_mask = mask_from_lengths(input_lengths).unsqueeze(1)
         input_subsequent_mask = mask_from_subsequent_positions(input_lengths.max())
-        self_attention_mask = input_length_mask & input_subsequent_mask
+        self_attention_mask = input_length_mask | input_subsequent_mask
         self_attention_mask = self_attention_mask.to(device=x.device)
 
         memory_attention_mask = mask_from_lengths(memory_lengths).unsqueeze(1).to(device=x.device)
