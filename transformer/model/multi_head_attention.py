@@ -96,6 +96,7 @@ class MultiHeadAttention(nn.Module):
         # (batch_size, query_len, d_model)
         final_output = self.final_projection(context)
 
-        state.attention = attention
+        if cache:
+            state.attention = attention.detach().cpu()
 
         return final_output, state
