@@ -128,24 +128,43 @@ class EncoderState(dict):
 
 
 class DecoderState(dict):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self["layers"] = {}
+        self["position"] = 0
+
+    @property
+    def position(self):
+        return self["position"]
+
+    @property
+    def layers(self):
+        return self["layers"]
+
+    @position.setter
+    def position(self, value: int):
+        self["position"] = value
+
     def select_layer(self, layer_index: int) -> LayerState:
-        if layer_index not in self:
-            self[layer_index] = LayerState()
-        return self[layer_index]
+        if layer_index not in self.layers:
+            self.layers[layer_index] = LayerState()
+        return self.layers[layer_index]
 
     def set_layer(self, layer_index, layer_state: LayerState) -> None:
-        self[layer_index] = layer_state
+        self.layers[layer_index] = layer_state
 
     def select_sample(self, sample_index: int) -> DecoderState:
         state = DecoderState()
-        for layer_index, layer_state in self.items():
+        state.position = self.position
+        for layer_index, layer_state in self.layers.items():
             state.set_layer(layer_index, layer_state.select_sample(sample_index))
         return state
 
     @classmethod
     def merge(cls, states: List[DecoderState]):
         state = DecoderState()
-        for layer_index in states[0].keys():
+        state.position = states[0].position
+        for layer_index in states[0].layers.keys():
             state.set_layer(
                 layer_index, LayerState.merge([state.select_layer(layer_index) for state in states])
             )
