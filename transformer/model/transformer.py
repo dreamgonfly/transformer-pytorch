@@ -2,11 +2,6 @@ from typing import Tuple, Optional
 
 from torch import Tensor
 from torch import nn
-from torch.nn.utils.rnn import (
-    PackedSequence,
-    pad_packed_sequence,
-    pack_padded_sequence,
-)
 
 from transformer.model.decoder import TransformerDecoder
 from transformer.model.encoder import TransformerEncoder
@@ -63,26 +58,32 @@ class Transformer(nn.Module):
 
         self.pad_token_index = pad_token_index
 
-    def forward(self, sources: PackedSequence, inputs: PackedSequence) -> Tensor:
-        memories, _ = self.encode(sources)
-        log_probs, _ = self.decode(memories, inputs, state=None, cache=False)
+    def forward(
+        self,
+        sources: Tensor,
+        inputs: Tensor,
+        source_lengths: Optional[Tensor],
+        input_lengths: Optional[Tensor],
+    ) -> Tensor:
+        memories, _ = self.encode(sources, source_lengths)
+        log_probs, _ = self.decode(
+            inputs, memories, input_lengths, source_lengths, state=None, cache=False
+        )
         return log_probs
 
-    def encode(self, sources: PackedSequence) -> Tuple[PackedSequence, EncoderState]:
-        sources_sequence, source_lengths = pad_packed_sequence(
-            sources, batch_first=True, padding_value=self.pad_token_index
-        )
-        sources = self.sources_embedding(sources_sequence)
-        sources = pack_padded_sequence(
-            sources, source_lengths, batch_first=True, enforce_sorted=False
-        )
-        memories, state = self.encoder(sources, state=None)
+    def encode(
+        self, sources: Tensor, source_lengths: Optional[Tensor]
+    ) -> Tuple[Tensor, EncoderState]:
+        sources = self.sources_embedding(sources)
+        memories, state = self.encoder(sources, source_lengths, state=None)
         return memories, state
 
     def decode(
         self,
-        memories: PackedSequence,
-        inputs: PackedSequence,
+        inputs: Tensor,
+        memories: Tensor,
+        input_lengths: Optional[Tensor],
+        memory_lengths: Optional[Tensor],
         state: Optional[DecoderState],
         cache: bool,
     ) -> Tuple[Tensor, DecoderState]:
@@ -90,16 +91,11 @@ class Transformer(nn.Module):
         if state is None:
             state = DecoderState()
 
-        inputs_sequence, input_lengths = pad_packed_sequence(
-            inputs, batch_first=True, padding_value=self.pad_token_index
-        )
-
-        inputs = self.inputs_token_embedding(inputs_sequence)
+        inputs = self.inputs_token_embedding(inputs)
         inputs = self.inputs_positional_encoding(inputs, state.position)
         inputs = self.inputs_dropout(inputs)
 
-        inputs = pack_padded_sequence(inputs, input_lengths, batch_first=True, enforce_sorted=False)
-        outputs, state = self.decoder(inputs, memories, state=state, cache=cache)
+        outputs, state = self.decoder(inputs, memories, input_lengths, memory_lengths, state, cache)
         logits = self.target_projection(outputs) * self.logit_scale
         log_probs = self.log_softmax(logits)
 

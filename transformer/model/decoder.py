@@ -2,7 +2,6 @@ from typing import Optional, Tuple
 
 from torch import Tensor
 from torch import nn
-from torch.nn.utils.rnn import PackedSequence, pad_packed_sequence
 
 from transformer.model.decoder_layer import TransformerDecoderLayer
 from transformer.model.masking import mask_from_lengths, mask_from_subsequent_positions
@@ -31,8 +30,10 @@ class TransformerDecoder(nn.Module):
 
     def forward(
         self,
-        inputs: PackedSequence,
-        memories: Optional[PackedSequence],
+        inputs: Tensor,
+        memories: Optional[Tensor],
+        input_lengths: Optional[Tensor],
+        memory_lengths: Optional[Tensor],
         state: Optional[DecoderState],
         cache: bool,
     ) -> Tuple[Tensor, DecoderState]:
@@ -42,17 +43,13 @@ class TransformerDecoder(nn.Module):
         if state is None:
             state = DecoderState()
 
-        x, input_lengths = pad_packed_sequence(inputs, batch_first=True)
-        memories, memory_lengths = pad_packed_sequence(memories, batch_first=True)
-
         input_length_mask = mask_from_lengths(input_lengths).unsqueeze(1)
-        input_subsequent_mask = mask_from_subsequent_positions(input_lengths.max())
+        input_subsequent_mask = mask_from_subsequent_positions(inputs.size(1)).to(inputs.device)
         self_attention_mask = input_length_mask | input_subsequent_mask
-        self_attention_mask = self_attention_mask.to(device=x.device)
 
-        memory_attention_mask = mask_from_lengths(memory_lengths).unsqueeze(1).to(device=x.device)
+        memory_attention_mask = mask_from_lengths(memory_lengths).unsqueeze(1)
 
-        x = self.layer_norm(x)
+        x = self.layer_norm(inputs)
         for layer_index, layer in enumerate(self.layers):
             layer_state = state.select_layer(layer_index)
             x, layer_state = layer(

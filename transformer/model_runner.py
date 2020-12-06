@@ -25,19 +25,12 @@ class ModelRunner(Runner):
     ) -> Dict[str, Any]:
         inputs, targets = batch
 
-        sources = pack_padded_sequence(
+        outputs = model(
             inputs["source_token_indices"],
-            inputs["source_length"].cpu(),
-            batch_first=True,
-            enforce_sorted=False,
-        )
-        inputs = pack_padded_sequence(
             inputs["input_token_indices"],
-            inputs["input_length"].cpu(),
-            batch_first=True,
-            enforce_sorted=False,
+            inputs["source_length"],
+            inputs["input_length"],
         )
-        outputs = model(sources, inputs)
         _, predictions = outputs.max(dim=-1)
 
         loss, num_tokens = self.label_smoothing_loss(outputs, targets["target_token_indices"])
@@ -50,19 +43,12 @@ class ModelRunner(Runner):
     def validation_step(self, model: nn.Module, batch: Any, info: TrainingInfo) -> Dict[str, Any]:
         inputs, targets = batch
 
-        sources = pack_padded_sequence(
+        outputs = model(
             inputs["source_token_indices"],
-            inputs["source_length"].cpu(),
-            batch_first=True,
-            enforce_sorted=False,
-        )
-        inputs = pack_padded_sequence(
             inputs["input_token_indices"],
-            inputs["input_length"].cpu(),
-            batch_first=True,
-            enforce_sorted=False,
+            inputs["source_length"],
+            inputs["input_length"],
         )
-        outputs = model(sources, inputs)
         _, predictions = outputs.max(dim=-1)
 
         loss, num_tokens = self.nll_loss(outputs, targets["target_token_indices"])
