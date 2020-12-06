@@ -33,7 +33,7 @@ class Transformer(nn.Module):
 
         self.sources_embedding = nn.Sequential(
             nn.Embedding(source_vocab_size, d_model, padding_idx=pad_token_index),
-            PositionalEncoding(d_model, num_positions=num_positions),
+            PositionalEncoding(d_model, num_positions),
             nn.Dropout(p=dropout),
         )
         self.encoder = TransformerEncoder(num_layers, d_model, d_ff, n_heads, dropout)
@@ -41,7 +41,7 @@ class Transformer(nn.Module):
         self.inputs_token_embedding = nn.Embedding(
             target_vocab_size, d_model, padding_idx=pad_token_index
         )
-        self.inputs_positional_encoding = PositionalEncoding(d_model, num_positions=num_positions)
+        self.inputs_positional_encoding = PositionalEncoding(d_model, num_positions)
         self.inputs_dropout = nn.Dropout(p=dropout)
         use_memory = True
         self.decoder = TransformerDecoder(num_layers, d_model, d_ff, n_heads, dropout, use_memory)
