@@ -1,4 +1,3 @@
-import math
 from typing import Optional
 
 import torch
@@ -13,18 +12,18 @@ class PositionalEncoding(nn.Module):
             raise ValueError(
                 f"Expected even number for positional embedding size, but got {embedding_size} instead."
             )
-        position_encodings = torch.zeros(num_positions, embedding_size, requires_grad=False)
-        position = torch.arange(0, num_positions).unsqueeze(1)
-        dimension = torch.arange(0, embedding_size, 2, dtype=torch.float)
-        div_term = torch.exp(dimension * -(math.log(10000.0) / embedding_size))
-        position_encodings[:, 0::2] = torch.sin(position.float() * div_term)
-        position_encodings[:, 1::2] = torch.cos(position.float() * div_term)
-        position_encodings = position_encodings.unsqueeze(0)
+        encoding_table = torch.zeros(num_positions, embedding_size)
+        positions = torch.arange(0, num_positions, dtype=torch.float64).unsqueeze(1)
+        dimensions = torch.arange(0, embedding_size, 2, dtype=torch.float64)
+        div_term = torch.pow(10000.0, dimensions / embedding_size)
+        encoding_table[:, 0::2] = torch.sin(positions / div_term)
+        encoding_table[:, 1::2] = torch.cos(positions / div_term)
+        encoding_table = encoding_table.unsqueeze(0).float()
         super(PositionalEncoding, self).__init__()
-        self.register_buffer("position_encodings", position_encodings)
+        self.register_buffer("encoding_table", encoding_table)
 
     def forward(self, x: Tensor, position: Optional[int] = None):
         if position is None:
-            return x + self.position_encodings[:, x.size(1)]
+            return x + self.encoding_table[:, x.size(1)]
         else:
-            return x + self.position_encodings[:, position : position + x.size(1)]
+            return x + self.encoding_table[:, position : position + x.size(1)]
